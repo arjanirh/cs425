@@ -1,8 +1,6 @@
 #include <string.h>
 #include <assert.h>
-
 #include "mp0.h"
-
 #define TIMER_INTERVAL 10000
 
 //Function declarations
@@ -20,8 +18,6 @@ pthread_mutex_t suspend_mutex;
 pthread_cond_t suspend_cond;
 struct sigaction sa;
 struct itimerval timer;
-
-
 
 void multicast_init(void) {
     unicast_init();
