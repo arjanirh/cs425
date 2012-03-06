@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <sys/time.h>
 #include <string.h>
 #include <assert.h>
 #include "mp0.h"
@@ -27,7 +31,7 @@ void multicast_init(void) {
 	new_seq = NULL;
 
 	//Make thread that sends out heartbeats and also periodically checks old and new seq arrays
-	pthread_create(&heartbeat_thread, NULL, heartbeater, NULL);
+	pthread_create(&heartbeat_thread, NULL, (void*)heartbeater, NULL);
 
 	//Create timer that periodically wakes up heartbeater thread
 	setup_timer();
@@ -37,7 +41,7 @@ void multicast_init(void) {
 void setup_timer(){
 
 	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = &timer_handler;
+	sa.sa_handler = (void*) &timer_handler;
 	sigaction(SIGALRM, &sa, NULL);
 
 	//Configure timer to expire every T time units
@@ -51,12 +55,14 @@ void setup_timer(){
 
 }
 void *heartbeater(void){
+int i=0;
 
 	while(1){
 		mutex_lock(&member_lock);
 
 		//Send out heartbeats to each process in the group
-		for(int i=0;i<mcast_num_members; i++){
+
+		for(i=0;i<mcast_num_members; i++){
 			if(mcast_members[i] == my_id)
 				continue;
 
@@ -69,7 +75,7 @@ void *heartbeater(void){
 		mutex_unlock(&member_lock);
 
 		//check old and new arrays to find failures
-		for(int i=0; i<seq_size; i++){
+		for(i=0; i<seq_size; i++){
 			//check failure
 			if(new_seq[i] <= old_seq[i] && new_seq[i]!=-1){			//-1 means we already detected it before
 				printf("[%d]: Process %d has failed.\n", my_id, mcast_members[i]); 
@@ -100,7 +106,8 @@ void receive(int source, const char *message, int len) {
 		old_seq = realloc(old_seq, sizeof(int)* mcast_num_members);
 		new_seq = realloc(new_seq, sizeof(int)* mcast_num_members);
 
-		for(int i=seq_size; i<mcast_num_members; i++){
+		int i=0;
+		for(i=seq_size; i<mcast_num_members; i++){
 			old_seq[i] = -1;
 			new_seq[i] = 0;
 		}
@@ -108,7 +115,8 @@ void receive(int source, const char *message, int len) {
 	}
 
 	int index = 0;
-	for(int i=0;i<mcast_num_members; i++){
+	int i=0;
+	for(i=0;i<mcast_num_members; i++){
 		if(source == mcast_members[i]){
 			index = i;
 			break;
