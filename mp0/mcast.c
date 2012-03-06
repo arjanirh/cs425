@@ -20,6 +20,7 @@ void multicast_init(void) {
 	
 	seq_size = 0;
 	sequence_num = 0;
+
 	//Make thread that sends out heartbeats and also periodically checks old and new seq arrays
 	pthread_create(&heartbeat_thread, NULL, heartbeater, NULL);
 
@@ -36,9 +37,10 @@ void *heartbeater(void){
 			if(mcast_members[i] == my_id)
 				continue;
 
-			sequence_num++;
-			char message = sequence_num;			//TODO 1 Fix this: check this. itoa() ??
-			usend(mcast_members[i], &message, 1);
+			sequence_num++;											//TODO: need to check for overflow? make long? reset?
+			char message[256];
+			sprintf(message, "%d", sequence_num);
+			usend(mcast_members[i], message, sizeof(message));
 			
 		}
 		mutex_unlock(&member_lock);
