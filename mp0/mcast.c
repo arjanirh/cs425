@@ -84,7 +84,7 @@ int i=0;
 			sequence_num++;											//TODO: need to check for overflow? make long? reset?
 			char message[256];
 			sprintf(message, "%d", sequence_num);
-			usend(mcast_members[i], message, sizeof(message));
+			usend(mcast_members[i], message, strlen(message));
 			
 		}
 		pthread_mutex_unlock(&member_lock);
@@ -103,7 +103,7 @@ int i=0;
 
 		debugprintf("Pausing heartbeat thread \n");
 		//pause or suspend until woken up by timer
-		sleep(1);
+		sleep(5);
 /*		pthread_mutex_lock(&suspend_mutex);
 		pthread_cond_wait(&suspend_cond, &suspend_mutex);
 		pthread_mutex_unlock(&suspend_mutex);

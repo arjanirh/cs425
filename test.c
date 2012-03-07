@@ -4,27 +4,11 @@ void send(char*, int length);
 
 int main(){
 
-	char str[10];
-	int seq=15;
-	
-	sprintf(str, "%d", seq);
-	send(str,1);
-	//printf("mess=%s\n", str);
-
+	int num1, num2;
+	printf("Enter two numbers bitte\n");
+	scanf("%d %d", &num1, &num2);
+	int num3;
+	num3=num1 + num2;
+	printf("%d", num3);
 	return 0;
-}
-
-
-void send(char* message, int length){
-
-	if(message != NULL)
-		printf("message=%s, len=%lu\n", message, sizeof(message));
-
-	int num = atoi(message);
-
-	printf("num=%d\n", num);
-	num++;
-	printf("num++=%d\n", num);
-
-
 }
