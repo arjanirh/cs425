@@ -135,13 +135,13 @@ void receive(int source, const char *message, int len) {
 	debugprintf("original message parsed = %s\n", original_message);
 
 
-		//Copy over timestamp
+/*		//Copy over timestamp
 		for(i=0;i<vector_len;i++)
 			my_timestamp[i] = incoming_timestamp[i];
 
     deliver(source, original_message);
-/*	
 	
+*/	
 	//2. check timestamps for ordering
 	int is_buffer = 0;
 	int is_reject = 0;
@@ -150,6 +150,7 @@ void receive(int source, const char *message, int len) {
 	check_buffered_messages(current_process_index, &is_buffer, &is_reject, incoming_timestamp);
 	//3. If out of order, then store message and timestamp and the source into queue
 	if(is_buffer==1){
+		debugprintf("Buffering message %s\n", original_message);
 		add_node(original_message, incoming_timestamp, source);
 	}
 	else if(is_reject==1){
@@ -168,17 +169,24 @@ void receive(int source, const char *message, int len) {
 
 			int index = getindex(curr->source);
 			int is_buffer=0, is_reject=0;
-			debugprintf("curr->timestamp[0] = %d\n", curr->timestamp[0]);
+			//debugprintf("curr->timestamp[0] = %d\n", curr->timestamp[0]);
 			check_buffered_messages(index, &is_buffer, &is_reject, curr->timestamp);
-			if(is_buffer !=1 && is_reject !=1){
-				pop_and_deliver(&curr);
+			if(is_buffer ==0 /*&& is_reject !=1*/){
+				//Copy over timestamp
+				for(i=0;i<vector_len;i++)
+					my_timestamp[i] = curr->timestamp[i];
+
+				node* old_curr = curr;
+				curr = curr->next;
+				pop_and_deliver(&old_curr);
+
 			}
 			else		
 				curr = curr->next;
 		}
 	}
 	
-	*/
+	
 }
 
 
@@ -222,17 +230,18 @@ void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int*
 				debugprintf("--- i=%d\n", i);
 				if(my_timestamp[i] != incoming_vector[i]){
 					*is_buffer_ptr = 1;
-					break;
+					//break;
 				}
-		}
-		else{
-				if(incoming_vector[i] < my_timestamp[i]){
+			/*	if(incoming_vector[i] < my_timestamp[i]){
 					*is_reject_ptr = 1;
 					break;
 				}
+			*/	
+		}
+		else{
 				if(incoming_vector[i] - my_timestamp[i] > 1){
 					*is_buffer_ptr = 1;
-					break;
+					//break;
 				}
 		}
 	}
