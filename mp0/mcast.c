@@ -103,7 +103,7 @@ int i=0;
 
 		debugprintf("Pausing heartbeat thread \n");
 		//pause or suspend until woken up by timer
-		sleep(5);
+		sleep(15);
 /*		pthread_mutex_lock(&suspend_mutex);
 		pthread_cond_wait(&suspend_cond, &suspend_mutex);
 		pthread_mutex_unlock(&suspend_mutex);
