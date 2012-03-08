@@ -22,7 +22,7 @@ typedef struct _node_{
 
 
 int *my_timestamp;
-int vector_len;
+int vector_len = 0;
 int sorted = 0;
 int *map;
 node *head;
@@ -35,12 +35,22 @@ char* concatenate_timestamp(const char* message);
 void pop_and_deliver(node ** curr_dbl_ptr);
 void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int* is_reject_ptr, int* incoming_vector);
 void sort_array();
+void shout_state();
+
+
+void shout_state(){
+
+
+	debugprintf("vector_len = %d\n", vector_len);
+
+
+}
 
 void multicast_init(void) {
     unicast_init();
 	my_timestamp = malloc(sizeof(int));
 	my_timestamp[0] = 0;
-	vector_len = 1;
+	//vector_len = 1;
 	head = NULL;
 	tail = NULL;
 }
@@ -53,7 +63,6 @@ void multicast_init(void) {
 void multicast(const char *message) {
 
 
-	debugprintf("-----calling mcast on message: %s----\n", message);
 	//Check if this is first call to mcast
 	if(sorted ==0){
 		sort_array();					//sort our local pid array
@@ -63,8 +72,10 @@ void multicast(const char *message) {
     // increment vector timestamp (increment current process's val in vector)
  	int index = getindex(my_id);
 
-	if(index >=vector_len)
-		debugprintf("index is greater than vector len\n");
+	if(index >=vector_len){
+		debugprintf("index=%d is greater than vector len=%d\n", index, vector_len);
+		shout_state();
+	}
 	my_timestamp[index]++;
 
 	/* Append timestamps to beginning of message
@@ -74,17 +85,17 @@ void multicast(const char *message) {
 
 	/* Send ucast with timestamp+message to every process*/
     int i;
-	debugprintf("-----locking mutex and starting for loop on all members : ----\n");
-    //pthread_mutex_lock(&member_lock);
-	debugprintf("acquired lock\n");
+	//debugprintf("-----locking mutex and starting for loop on all members : ----\n");
+    pthread_mutex_lock(&member_lock);
+	//debugprintf("acquired lock\n");
     for (i = 0; i < mcast_num_members; i++) {
 		int new_len = strlen(new_message)+1;
-		debugprintf("-----Sending message----\n");
+		//debugprintf("-----Sending message----\n");
         usend(mcast_members[i], new_message, new_len);
 		//usend(mcast_members[i], message, strlen(message)+1);
     }
-    //pthread_mutex_unlock(&member_lock);
-	debugprintf("-----finished looping over and usending to all Processes: ----\n");
+    pthread_mutex_unlock(&member_lock);
+	//debugprintf("-----finished looping over and usending to all Processes: ----\n");
 }
 
 /*
@@ -110,8 +121,12 @@ void receive(int source, const char *message, int len) {
 	int incoming_timestamp[vector_len];
 	for(i=0;i<vector_len; i++){
 		sscanf(message+(2*i), "%d ", &(incoming_timestamp[i]));
+		debugprintf("timestamp parsed (index %d)=%d\n", i, incoming_timestamp[i]);
 	}
 	char* original_message = message+(i*2);
+	debugprintf("original message parsed = %s\n", original_message);
+
+
 
 	//2. check timestamps for ordering
 	int is_buffer = 0;
@@ -127,7 +142,6 @@ void receive(int source, const char *message, int len) {
 		return;
 	}
 	else{
-		debugprintf("-----delivering message----\n");
     	deliver(source, original_message);
 
 		//Copy over timestamp
@@ -140,6 +154,7 @@ void receive(int source, const char *message, int len) {
 
 			int index = getindex(curr->source);
 			int is_buffer=0, is_reject=0;
+			debugprintf("curr->timestamp[0] = %d\n", curr->timestamp[0]);
 			check_buffered_messages(index, &is_buffer, &is_reject, curr->timestamp);
 			if(is_buffer !=1 && is_reject !=1){
 				pop_and_deliver(&curr);
@@ -188,6 +203,7 @@ void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int*
 	for(i=0;i<vector_len; i++){
 		if(i!=current_process_index){
 				//should be same
+				debugprintf("--- i=%d\n", i);
 				if(my_timestamp[i] != incoming_vector[i]){
 					*is_buffer_ptr = 1;
 					break;
@@ -230,7 +246,7 @@ void add_node(char* original_message,int* incoming_timestamp,int source){
 		int len = strlen(original_message);
 		curr->message = malloc(sizeof(char)*(len+1));
 		strcpy(curr->message, original_message);
-		curr->timestamp = malloc(sizeof(int)*vector_len);
+		curr->timestamp = malloc(vector_len * sizeof(int));
 
 		int i=0;
 		for(i=0;i<vector_len; i++){
@@ -292,6 +308,7 @@ int getindex(int pid){
 void mcast_join(int member) {
 	
 		vector_len++;
+		debugprintf("Called mcast join, vector_len=%d\n", vector_len);
 		my_timestamp = realloc(my_timestamp, sizeof(int)* vector_len);
 		int i=0;
 		for(i=0;i<vector_len; i++){
