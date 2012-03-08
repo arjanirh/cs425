@@ -9,7 +9,9 @@
 
 #include "mp1.h"
 
-
+/* Node structure for linked list
+ * Linked list maintains buffered messages
+ */ 
 typedef struct _node_{
 	int *timestamp;
 	char *message;
@@ -20,14 +22,15 @@ typedef struct _node_{
 }node;
 
 
-
-int *my_timestamp;
+/* Global Variables */
+int *my_timestamp = NULL;
 int vector_len = 0;
 int sorted = 0;
-int *map;
-node *head;
-node *tail;
+int *map = NULL;
+node *list_head = NULL;
+node *tail = NULL;
 
+/* Function declarations */
 int compare(const void *a, const void *b);
 int getindex(int pid);
 void add_node(char* original_message,int* incoming_timestamp,int source);
@@ -37,22 +40,23 @@ void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int*
 void sort_array();
 void shout_state();
 
-
+/* Print debugging information
+ */ 
 void shout_state(){
 
-
 	debugprintf("vector_len = %d\n", vector_len);
-
-
 }
 
+/* Initilize global variables
+ */ 
 void multicast_init(void) {
+	debugprintf("CALLING MULTICAST INIT\n");
     unicast_init();
-	my_timestamp = malloc(sizeof(int));
-	my_timestamp[0] = 0;
+	//my_timestamp = (int*)malloc(sizeof(int));
+	//my_timestamp[0] = 0;
 	//vector_len = 1;
-	head = NULL;
-	tail = NULL;
+	//list_head = NULL;
+	//tail = NULL;
 }
 
 /* Basic multicast implementation */
@@ -70,13 +74,14 @@ void multicast(const char *message) {
 	}
 	
     // increment vector timestamp (increment current process's val in vector)
- 	int index = getindex(my_id);
+ 	int myindex = getindex(my_id);
 
-	if(index >=vector_len){
-		debugprintf("index=%d is greater than vector len=%d\n", index, vector_len);
+	if(myindex >=vector_len){
+		debugprintf("index=%d is greater than vector len=%d\n", myindex, vector_len);
 		shout_state();
 	}
-	my_timestamp[index]++;
+	debugprintf("my_timestamp[%d]= %d\n", myindex, my_timestamp[myindex]);
+	my_timestamp[myindex]+=1;
 
 	/* Append timestamps to beginning of message
 	  "hello" --> "1 0 0 hello"
@@ -120,14 +125,23 @@ void receive(int source, const char *message, int len) {
 	//1. Parse into vector and message
 	int incoming_timestamp[vector_len];
 	for(i=0;i<vector_len; i++){
-		sscanf(message+(2*i), "%d ", &(incoming_timestamp[i]));
+		char* message_ptr = message + (2*i);
+		sscanf(message_ptr, "%d ", &(incoming_timestamp[i]));
 		debugprintf("timestamp parsed (index %d)=%d\n", i, incoming_timestamp[i]);
+
 	}
-	char* original_message = message+(i*2);
+//	strcpy(
+	char* original_message = message+(i*2);					//CHECK: should we use strcpy?
 	debugprintf("original message parsed = %s\n", original_message);
 
 
+		//Copy over timestamp
+		for(i=0;i<vector_len;i++)
+			my_timestamp[i] = incoming_timestamp[i];
 
+    deliver(source, original_message);
+/*	
+	
 	//2. check timestamps for ordering
 	int is_buffer = 0;
 	int is_reject = 0;
@@ -149,7 +163,7 @@ void receive(int source, const char *message, int len) {
 			my_timestamp[i] = incoming_timestamp[i];
 	
 		//Now check the queue, if you can deliver any buffered messages
-		node* curr = head;
+		node* curr = list_head;
 		while(curr!=NULL){
 
 			int index = getindex(curr->source);
@@ -163,6 +177,8 @@ void receive(int source, const char *message, int len) {
 				curr = curr->next;
 		}
 	}
+	
+	*/
 }
 
 
@@ -176,7 +192,7 @@ void pop_and_deliver(node ** curr_dbl_ptr){
 		first->next = second;
 	}
 	else
-		head = curr->next;
+		list_head = curr->next;
 
 	if(second!=NULL)
 		second->prev = first;
@@ -227,12 +243,12 @@ void add_node(char* original_message,int* incoming_timestamp,int source){
 
 
 	node* curr = NULL;
-	if(head == NULL){
+	if(list_head == NULL){
 		curr = malloc(sizeof(node));
-		head = curr;
-		head->next = NULL;
-		head->prev = NULL;
-		tail = head;
+		list_head = curr;
+		list_head->next = NULL;
+		list_head->prev = NULL;
+		tail = list_head;
 
 	}
 	else{
@@ -244,9 +260,9 @@ void add_node(char* original_message,int* incoming_timestamp,int source){
 
 		curr->source = source;
 		int len = strlen(original_message);
-		curr->message = malloc(sizeof(char)*(len+1));
+		curr->message = malloc((sizeof(char))*(len+1));
 		strcpy(curr->message, original_message);
-		curr->timestamp = malloc(vector_len * sizeof(int));
+		curr->timestamp = malloc(vector_len * (sizeof(int)));
 
 		int i=0;
 		for(i=0;i<vector_len; i++){
@@ -265,7 +281,7 @@ char* concatenate_timestamp(const char* message){
 	//Find the size to be allocated
 	int len = vector_len *2 + strlen(message) +1;
 
-	char* new_message = malloc(sizeof(char) * len);
+	char* new_message = malloc((sizeof(char)) * len);
 	memset(new_message, 0, len);
 
 	//Concatenate first timestamp (null terminates the new message)
@@ -277,10 +293,10 @@ char* concatenate_timestamp(const char* message){
 	//concatenate each timestamp index
 	int i=0;
 	for(i=1;i<vector_len; i++){
-		char temp[3];
-		sprintf(temp, "%d ", my_timestamp[i]);
-		temp[2] = '\0';
-		strcat(new_message, temp);		
+		char temp2[3];
+		sprintf(temp2, "%d ", my_timestamp[i]);
+		temp2[2] = '\0';
+		strcat(new_message, temp2);		
 	}
 
 	//concatenate the real message
@@ -309,12 +325,13 @@ void mcast_join(int member) {
 	
 		vector_len++;
 		debugprintf("Called mcast join, vector_len=%d\n", vector_len);
-		my_timestamp = realloc(my_timestamp, sizeof(int)* vector_len);
+		my_timestamp =(int*) realloc(my_timestamp, (sizeof(int))* vector_len);
 		int i=0;
 		for(i=0;i<vector_len; i++){
 			my_timestamp[i] = 0;
 		}
 
+		sort_array();
 
 }
 
@@ -322,7 +339,9 @@ void sort_array(){
 	int i=0;
 
     //pthread_mutex_lock(&member_lock);
-	map = malloc(sizeof(int)*mcast_num_members);
+	//map = malloc((sizeof(int))*mcast_num_members);
+	map = realloc(map, (sizeof(int))*mcast_num_members);
+
 
 	for(i=0;i<mcast_num_members;i++){
 		map[i] = mcast_members[i];
