@@ -1,14 +1,20 @@
 /*
- *TODO: 1) should we protect mcast_members and mcast_num_members while reading also?
  *
  */
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <signal.h>
+#include <sys/time.h>
+#include <pthread.h>
+#include <unistd.h>
+
 #include "mp1.h"
 
+#define TIMER_INTERVAL 10000
 #define TAG_NACK 3
+#define TAG_HEARTBEAT 2
 #define TAG_NORMAL_MESSAGE 1
 
 /* Node structure for linked list
@@ -33,6 +39,14 @@ int vector_len = 0;
 int sorted = 0;
 int *map = NULL;
 
+int *old_seq=NULL;
+int *new_seq=NULL;
+int seq_size=0;
+int sequence_num=0;
+pthread_t heartbeat_thread;
+//pthread_mutex_t suspend_mutex = PTHREAD_MUTEX_INITIALIZER;
+//pthread_cond_t suspend_cond = PTHREAD_COND_INITIALIZER;
+
 /* Hold back queue variables */
 node *list_head = NULL;
 node *tail = NULL;
@@ -53,6 +67,7 @@ void shout_state();
 void store_sent_message(char *message,int length,int seq_num);
 void retransmit_message(int seq_num, int nack_source);
 void send_nack(int seq_num, int dest);
+void *heartbeater(void);
 
 /* Print debugging information
  */ 
@@ -66,11 +81,9 @@ void shout_state(){
 void multicast_init(void) {
 	debugprintf("CALLING MULTICAST INIT\n");
     unicast_init();
-	//my_timestamp = (int*)malloc(sizeof(int));
-	//my_timestamp[0] = 0;
-	//vector_len = 1;
-	//list_head = NULL;
-	//tail = NULL;
+	
+	//Make thread that sends out heartbeats and also periodically checks old and new seq arrays
+	pthread_create(&heartbeat_thread, NULL, (void*)heartbeater, NULL);
 }
 
 /* Basic multicast implementation */
@@ -169,17 +182,29 @@ void receive(int source, const char *message, int len) {
 	int tag = 0;
 	sscanf(message, "%d ", &tag);
 	
-	if(tag == 3){
+	if(tag == TAG_NACK){
 		/* NACK MESSAGE */
 		int seq = 0;
 		sscanf(message+2, "%d ", &seq);
 		retransmit_message(seq, source);
 	}
-	else if(tag == 4){
+	else if(tag == TAG_HEARTBEAT){
 		/* HEARTBEAT MESSAGE */
 
+		int index = 0;
+		int i=0;
+		for(i=0;i<mcast_num_members; i++){
+			if(source == mcast_members[i]){
+				index = i;
+			}
+		}
+	
+		int seq = 0;
+		sscanf(message+2, "%d ", &seq);
+		debugprintf("[HEARTBEAT]received heartbeat, updating new_seq[%d] to %d\n", index, seq);
+		new_seq[index] = seq;
 	}
-	else if(tag == 1){
+	else if(tag == TAG_NORMAL_MESSAGE){
 		/* NORMAL MESSAGE */
 	int incoming_timestamp[vector_len];
 	for(i=0;i<vector_len; i++){
@@ -446,6 +471,24 @@ void mcast_join(int member) {
 			my_timestamp[i] = 0;
 		}
 
+	pthread_mutex_lock(&member_lock);
+	
+	//Resize seq arrays if receive from new member
+	if(seq_size != mcast_num_members){
+
+		old_seq = realloc(old_seq, sizeof(int)* mcast_num_members);
+		new_seq = realloc(new_seq, sizeof(int)* mcast_num_members);
+
+		int i=0;
+		for(i=seq_size; i<mcast_num_members; i++){
+			old_seq[i] = -1;
+			new_seq[i] = 0;
+		}
+		seq_size = mcast_num_members;
+	}
+
+
+	pthread_mutex_unlock(&member_lock);
 		sort_array();
 
 }
@@ -475,7 +518,60 @@ int compare(const void *a, const void *b){
 
 }
 
+void *heartbeater(void){
+	int i=0;
+	int myindex = 0;
+	int counter = 0;
+	while(1){
+		counter++;
+		pthread_mutex_lock(&member_lock);
+//		debugprintf("sending heartbeat\n");
 
+		//Send out heartbeats to each process in the group
+
+		for(i=0;i<mcast_num_members; i++){
+			if(mcast_members[i] == my_id){
+				myindex = i;	
+				continue;
+			}
+			sequence_num++;											//TODO: need to check for overflow? make long? reset?
+			char message[5];
+			sprintf(message, "%d %d ", TAG_HEARTBEAT, sequence_num);
+			message[4] = 0;
+			debugprintf("Sending heartbeat message: %s\n", message);
+			usend(mcast_members[i], message, strlen(message)+1);
+			
+		}
+		pthread_mutex_unlock(&member_lock);
+
+		if(counter%4 == 0){
+			//check old and new arrays to find failures
+			debugprintf("Checking arrays...\n");
+			for(i=0; i<seq_size; i++){
+				//check failure
+				
+				debugprintf("-----new_seq[%d]=%d, old_seq[%d]=%d\n", i, new_seq[i], i, old_seq[i]);
+				if(i!=myindex && new_seq[i] <= old_seq[i] && new_seq[i]!=-1){			//-1 means we already detected it before
+					debugprintf("-----[%d]: Process %d has failed.\n", my_id, mcast_members[i]); 
+					debugprintf("-----new_seq[%d]=%d, old_seq[%d]=%d\n", i, new_seq[i], i, old_seq[i]);
+					new_seq[i] = -1;			//denote failure
+				}
+				
+				//copy from new to old
+				old_seq[i] = new_seq[i];
+			}
+		}
+
+		debugprintf("Pausing heartbeat thread \n");
+		//pause or suspend until woken up by timer
+		sleep(5);
+/*		pthread_mutex_lock(&suspend_mutex);
+		pthread_cond_wait(&suspend_cond, &suspend_mutex);
+		pthread_mutex_unlock(&suspend_mutex);
+*/
+	}
+
+}
 
 
 
