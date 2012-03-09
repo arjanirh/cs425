@@ -205,12 +205,27 @@ void receive(int source, const char *message, int len) {
 		new_seq[index] = seq;
 	}
 	else if(tag == TAG_NORMAL_MESSAGE){
+	char num_str[256];
+	char* message_ptr = message + (2);
+		
+		sscanf(message_ptr, "%s ", num_str);
+
+		//sscanf(message_ptr, "%d ", &(incoming_timestamp[i]));
+		//debugprintf("timestamp parsed (index %d)=%d\n", i, incoming_timestamp[i]);
+
+
+
+
 		/* NORMAL MESSAGE */
 	int incoming_timestamp[vector_len];
 	for(i=0;i<vector_len; i++){
-		char* message_ptr = message + (2*(i+1));
+		//message_ptr = message + (2*(i+1));
+
+		sscanf(message_ptr, "%s ", num_str);
+	
 		sscanf(message_ptr, "%d ", &(incoming_timestamp[i]));
 		debugprintf("timestamp parsed (index %d)=%d\n", i, incoming_timestamp[i]);
+		message_ptr = message_ptr + strlen(num_str)+1;
 
 	}
 	char* original_message = message+((i+1)*2);					//CHECK: should we use strcpy?
@@ -419,23 +434,26 @@ void add_node(char* original_message,int* incoming_timestamp,int source){
 char* concatenate_timestamp(const char* message){
 	
 	//Find the size to be allocated
-	int len = 2+ vector_len *2 + strlen(message) +1;
+	//int len = 2+ vector_len *2 + strlen(message) +1;
 
-	char* new_message = malloc((sizeof(char)) * len);
-	memset(new_message, 0, len);
-
+	//char* new_message = malloc((sizeof(char)) * len);
+	//memset(new_message, 0, len);
+	//char new_message[256];
+	char* new_message = malloc(256);
+	memset(new_message, 0, 256);
+	
 	//Concatenate first timestamp (null terminates the new message)
-	char temp[3];
+	char temp[256];
 	sprintf(temp, "%d ", TAG_NORMAL_MESSAGE);
-	temp[2] = '\0';
+	//temp[2] = '\0';
 	strcpy(new_message, temp);
 
 	//concatenate each timestamp index
 	int i=0;
 	for(i=0;i<vector_len; i++){
-		char temp2[3];
+		char temp2[256];
 		sprintf(temp2, "%d ", my_timestamp[i]);
-		temp2[2] = '\0';
+	//	temp2[2] = '\0';
 		strcat(new_message, temp2);		
 	}
 
