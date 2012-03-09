@@ -310,7 +310,8 @@ void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int*
 					for(j=my_timestamp[i]+1; j<=incoming_vector[i]; j++){
 						int seq = j;
 						int dest = map[i];
-						send_nack(j, dest);
+						debugprintf("Sending NACK for seq=%d\n", seq);
+						send_nack(seq, dest);
 					}
 
 					//break;
@@ -329,7 +330,8 @@ void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int*
 					for(j=my_timestamp[i]+1; j<incoming_vector[i]; j++){
 						int seq = j;
 						int dest = map[i];
-						send_nack(j, dest);
+						debugprintf("Sending NACK for seq=%d\n", seq);
+						send_nack(seq, dest);
 					}
 				}
 		}
@@ -344,6 +346,7 @@ void send_nack(int seq_num, int dest){
 	char *message = malloc(len*sizeof(char));
 	sprintf(message, "%d %d ", TAG_NACK, seq_num);
 	message[len-1] = '\0';
+
     
 	usend(dest, message, len);
 }
