@@ -364,9 +364,10 @@ void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int*
 	for(i=0;i<vector_len; i++){
 		if(i!=current_process_index){
 				//should be same
-				printf("Checking rejection for timestamp index=%d\n", i);
+				//printf("Checking rejection for timestamp index=%d\n", i);
+				//printf("incoming_vector[%d]=%d, my_timestamp[%d]=%d\n",i, incoming_vector[i], i, my_timestamp[i]);
 				if(incoming_vector[i] < my_timestamp[i]){
-				printf("(setting reject=1) Rejected for timestamp index=%d\n", i);
+				//printf("(setting reject=1) Rejected for timestamp index=%d\n", i);
 					*is_reject_ptr = 1;
 					return;
 				}
@@ -386,7 +387,7 @@ void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int*
 				
 		}
 		else{
-				if(incoming_vector[i] < my_timestamp[i]){
+				if(incoming_vector[i] <= my_timestamp[i]){			//TODO changed this
 					*is_reject_ptr = 1;
 					return;
 				}
