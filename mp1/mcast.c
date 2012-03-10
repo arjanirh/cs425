@@ -1,5 +1,7 @@
-/*
- *
+/*	Reliable multicast with causal ordering and failure detection
+ *	CS 425 MP1
+ *	Arjan Singh Nirh
+ *	Shpendi Jashri
  */
 #include <string.h>
 #include <stdio.h>
@@ -72,7 +74,6 @@ void *heartbeater(void);
 /* Print debugging information
  */ 
 void shout_state(){
-
 	debugprintf("vector_len = %d\n", vector_len);
 }
 
@@ -103,15 +104,12 @@ void multicast(const char *message) {
 	//Deliver message to myself first
     deliver(my_id, message);
 
-
     // increment vector timestamp (increment current process's val in vector)
  	int myindex = getindex(my_id);
 
 	if(myindex >=vector_len){
-	//	debugprintf("index=%d is greater than vector len=%d\n", myindex, vector_len);
 		shout_state();
 	}
-	//debugprintf("my_timestamp[%d]= %d\n", myindex, my_timestamp[myindex]);
 	pthread_mutex_lock(&thread_mutex);
 	my_timestamp[myindex]+=1;
 	pthread_mutex_unlock(&thread_mutex);
@@ -181,7 +179,6 @@ void receive(int source, const char *message, int len) {
 	pthread_mutex_unlock(&thread_mutex);
 	
 	//1. Parse into vector and message
-	
 	//What kind of message
 	int tag = 0;
 	sscanf(message, "%d ", &tag);
@@ -207,10 +204,10 @@ void receive(int source, const char *message, int len) {
 	
 		int seq = 0;
 		sscanf(message+2, "%d ", &seq);
-		//debugprintf("[HEARTBEAT]received heartbeat, updating new_seq[%d] to %d\n", index, seq);
 		new_seq[index] = seq;
 	}
 	else if(tag == TAG_NORMAL_MESSAGE){
+
 		/* NORMAL MESSAGE */
 	pthread_mutex_lock(&thread_mutex);
 	char num_str[256];
@@ -220,18 +217,13 @@ void receive(int source, const char *message, int len) {
 
 	int incoming_timestamp[vector_len];
 	for(i=0;i<vector_len; i++){
-		//message_ptr = message + (2*(i+1));
 
 		sscanf(message_ptr, "%s ", num_str);
-	
 		sscanf(message_ptr, "%d ", &(incoming_timestamp[i]));
-		debugprintf("timestamp parsed (index %d)=%d\n", i, incoming_timestamp[i]);
 		message_ptr = message_ptr + strlen(num_str)+1;
 
 	}
 	char* original_message = message+((i+1)*2);					//CHECK: should we use strcpy?
-	debugprintf("original message parsed = %s\n", original_message);
-
 
 	//2. check timestamps for ordering
 	int is_buffer = 0;
@@ -245,9 +237,7 @@ void receive(int source, const char *message, int len) {
 		return;
 	}
 	else if(is_buffer==1){
-		debugprintf("Buffering message %s\n", original_message);
 		add_node(original_message, incoming_timestamp, source);
-		
 	}
 	else{
 		//Copy over timestamp
@@ -263,7 +253,6 @@ void receive(int source, const char *message, int len) {
 
 			int index = getindex(curr->source);
 			int is_buffer=0, is_reject=0;
-			debugprintf("curr->timestamp[0] = %d\n", curr->timestamp[0]);
 			check_buffered_messages(index, &is_buffer, &is_reject, curr->timestamp, 1);
 			if(is_reject == 1){
 				node* old_curr = curr;
@@ -285,27 +274,17 @@ void receive(int source, const char *message, int len) {
 				curr =list_head ;
 
 			}
-		/*	if(is_buffer ==0 && is_reject ==0){
-				//Copy over timestamp
-				for(i=0;i<vector_len;i++)
-					my_timestamp[i] = curr->timestamp[i];
-
-				node* old_curr = curr;
-				curr = curr->next;
-				pop_and_deliver(&old_curr);
-
-			}
-			*/
 			else		
 				curr = curr->next;
 		}
 	}
-
 	pthread_mutex_unlock(&thread_mutex);
 	}
 	
 }
-
+/*
+ * After receiving nack, retransmit message to source of NACK
+ */
 void retransmit_message(int seq_num, int nack_source){
 	
 	debugprintf("RETRANSMITTING message i=%d to process = %d\n", seq_num, nack_source);
@@ -317,7 +296,6 @@ void retransmit_message(int seq_num, int nack_source){
 	while(curr->next !=NULL){
 		if(curr->seq_num == seq_num){
 			usend(nack_source, curr->message, curr->length);
-			//debugprintf("RETRANSMITTING message i=%d to process = %d\n", seq_num, nack_source);
 			return;
 		}
 		else
@@ -326,6 +304,9 @@ void retransmit_message(int seq_num, int nack_source){
 
 }
 
+/* Remove a node from linked list
+ *  @param isDeliver: if after popping node, should the message be delivered
+ */ 
 void pop(node ** curr_dbl_ptr, int isDeliver){
 
 	node* curr = *curr_dbl_ptr;
@@ -358,19 +339,25 @@ void pop(node ** curr_dbl_ptr, int isDeliver){
 
 }
 
+/*
+ * Checks if a recieved message should be buffered or rejected
+ * Sends Nacks if out of order message received
+ */
 void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int* is_reject_ptr, int* incoming_vector, int is_in_buffer){
 
 	int i=0;
 	int j=0;
+	/* Go through the timestamp */
 	for(i=0;i<vector_len; i++){
+		/* Skip failed processes */
 		if(old_seq[i] == -2)
 			continue;
+		/* If not source process index, then everything should be equal
+		 * If current timestamp is more than incoming timestamp then reject
+		 * Otherwise buffer the message
+		 */
 		if(i!=current_process_index){
-				//should be same
-				//printf("Checking rejection for timestamp index=%d\n", i);
-				//printf("incoming_vector[%d]=%d, my_timestamp[%d]=%d\n",i, incoming_vector[i], i, my_timestamp[i]);
 				if(incoming_vector[i] < my_timestamp[i]){
-				//printf("(setting reject=1) Rejected for timestamp index=%d\n", i);
 					*is_reject_ptr = 1;
 					return;
 				}
@@ -386,10 +373,9 @@ void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int*
 							send_nack(seq, dest);
 						}
 					}
-					//break;
 				}
-				
 		}
+		/* If source process index, then check if less than */
 		else{
 				if(incoming_vector[i] <= my_timestamp[i]){			//TODO changed this
 					*is_reject_ptr = 1;
@@ -413,7 +399,7 @@ void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int*
 	}
 }
 
-
+/* Sends a NACK message with sequence number of required message to appropritate destination */
 void send_nack(int seq_num, int dest){
 
 	//Construct the NACK
@@ -421,7 +407,6 @@ void send_nack(int seq_num, int dest){
 	char *message = malloc(len*sizeof(char));
 	sprintf(message, "%d %d ", TAG_NACK, seq_num);
 	message[len-1] = '\0';
-
     
 	usend(dest, message, len);
 }
@@ -468,12 +453,6 @@ void add_node(char* original_message,int* incoming_timestamp,int source){
 */
 char* concatenate_timestamp(const char* message){
 	
-	//Find the size to be allocated
-	//int len = 2+ vector_len *2 + strlen(message) +1;
-
-	//char* new_message = malloc((sizeof(char)) * len);
-	//memset(new_message, 0, len);
-	//char new_message[256];
 	char* new_message = malloc(256);
 	memset(new_message, 0, 256);
 	
@@ -488,7 +467,6 @@ char* concatenate_timestamp(const char* message){
 	for(i=0;i<vector_len; i++){
 		char temp2[256];
 		sprintf(temp2, "%d ", my_timestamp[i]);
-	//	temp2[2] = '\0';
 		strcat(new_message, temp2);		
 	}
 
@@ -498,6 +476,7 @@ char* concatenate_timestamp(const char* message){
 	return new_message;
 }
 
+/* Get index of given pid form local array */
 int getindex(int pid){
 
 	int i=0;
@@ -513,7 +492,7 @@ int getindex(int pid){
 
 }
 
-
+/* Called everytime a new process joins */
 void mcast_join(int member) {
 	
 		vector_len++;
@@ -546,20 +525,16 @@ void mcast_join(int member) {
 
 }
 
+/* For synchronizing pid array across all processes */
 void sort_array(){
 	int i=0;
 
-    //pthread_mutex_lock(&member_lock);
-	//map = malloc((sizeof(int))*mcast_num_members);
 	map = realloc(map, (sizeof(int))*mcast_num_members);
-
-
 	for(i=0;i<mcast_num_members;i++){
 		map[i] = mcast_members[i];
 	}
 	
 	qsort(map, mcast_num_members, sizeof(int), compare);
-    //pthread_mutex_unlock(&member_lock);
 
 }
 
@@ -571,6 +546,10 @@ int compare(const void *a, const void *b){
 
 }
 
+/* Heartbeat thread's function call
+ * Sends heartbeat to all alive processes every 5 seconds
+ * Checks for failures every 20 seconds
+ */ 
 void *heartbeater(void){
 	int i=0;
 	int myindex = 0;
@@ -578,7 +557,6 @@ void *heartbeater(void){
 	while(1){
 		counter++;
 		pthread_mutex_lock(&member_lock);
-//		debugprintf("sending heartbeat\n");
 
 		//Send out heartbeats to each process in the group
 
@@ -618,15 +596,7 @@ void *heartbeater(void){
 		debugprintf("Pausing heartbeat thread \n");
 		//pause or suspend until woken up by timer
 		sleep(5);
-/*		pthread_mutex_lock(&suspend_mutex);
-		pthread_cond_wait(&suspend_cond, &suspend_mutex);
-		pthread_mutex_unlock(&suspend_mutex);
-*/
 	}
 
 }
-
-
-
-
 
