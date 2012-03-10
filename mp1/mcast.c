@@ -363,6 +363,8 @@ void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int*
 	int i=0;
 	int j=0;
 	for(i=0;i<vector_len; i++){
+		if(old_seq[i] == -2)
+			continue;
 		if(i!=current_process_index){
 				//should be same
 				//printf("Checking rejection for timestamp index=%d\n", i);
@@ -597,15 +599,15 @@ void *heartbeater(void){
 
 		if(counter%4 == 0){
 			//check old and new arrays to find failures
-			debugprintf("Checking arrays...\n");
 			for(i=0; i<seq_size; i++){
 				//check failure
 				
-				debugprintf("-----new_seq[%d]=%d, old_seq[%d]=%d\n", i, new_seq[i], i, old_seq[i]);
 				if(i!=myindex && new_seq[i] <= old_seq[i] && new_seq[i]!=-1){			//-1 means we already detected it before
 					debugprintf("-----[%d]: Process %d has failed.\n", my_id, mcast_members[i]); 
-					debugprintf("-----new_seq[%d]=%d, old_seq[%d]=%d\n", i, new_seq[i], i, old_seq[i]);
-					new_seq[i] = -1;			//denote failure
+					new_seq[i] = -2;			//denote failure
+		pthread_mutex_lock(&member_lock);
+					mcast_num_members--;
+		pthread_mutex_unlock(&member_lock);
 				}
 				
 				//copy from new to old
