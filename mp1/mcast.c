@@ -61,7 +61,7 @@ int getindex(int pid);
 void add_node(char* original_message,int* incoming_timestamp,int source);
 char* concatenate_timestamp(const char* message);
 void pop(node ** curr_dbl_ptr, int);
-void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int* is_reject_ptr, int* incoming_vector);
+void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int* is_reject_ptr, int* incoming_vector, int);
 void sort_array();
 void shout_state();
 void store_sent_message(char *message,int length,int seq_num);
@@ -238,7 +238,7 @@ void receive(int source, const char *message, int len) {
 	int is_reject = 0;
 	int current_process_index = getindex(source);
 
-	check_buffered_messages(current_process_index, &is_buffer, &is_reject, incoming_timestamp);
+	check_buffered_messages(current_process_index, &is_buffer, &is_reject, incoming_timestamp, 0);
 	//3. If out of order, then store message and timestamp and the source into queue
 	if(is_reject==1){
 		pthread_mutex_unlock(&thread_mutex);
@@ -264,7 +264,7 @@ void receive(int source, const char *message, int len) {
 			int index = getindex(curr->source);
 			int is_buffer=0, is_reject=0;
 			debugprintf("curr->timestamp[0] = %d\n", curr->timestamp[0]);
-			check_buffered_messages(index, &is_buffer, &is_reject, curr->timestamp);
+			check_buffered_messages(index, &is_buffer, &is_reject, curr->timestamp, 1);
 			if(is_reject == 1){
 				node* old_curr = curr;
 				curr = curr->next;
@@ -357,7 +357,7 @@ void pop(node ** curr_dbl_ptr, int isDeliver){
 
 }
 
-void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int* is_reject_ptr, int* incoming_vector){
+void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int* is_reject_ptr, int* incoming_vector, int is_in_buffer){
 
 	int i=0;
 	int j=0;
@@ -374,14 +374,15 @@ void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int*
 				if(my_timestamp[i] != incoming_vector[i]){
 					*is_buffer_ptr = 1;
 					
-					//Send out NACKS
-					for(j=my_timestamp[i]+1; j<=incoming_vector[i]; j++){
-						int seq = j;
-						int dest = map[i];
-						debugprintf("Sending NACK for seq=%d\n", seq);
-						send_nack(seq, dest);
+					if(is_in_buffer==0){
+						//Send out NACKS 
+						for(j=my_timestamp[i]+1; j<=incoming_vector[i]; j++){
+							int seq = j;
+							int dest = map[i];
+							debugprintf("Sending NACK for seq=%d\n", seq);
+							send_nack(seq, dest);
+						}
 					}
-
 					//break;
 				}
 				
@@ -394,12 +395,15 @@ void check_buffered_messages(int current_process_index, int* is_buffer_ptr, int*
 				if(incoming_vector[i] - my_timestamp[i] > 1){
 					*is_buffer_ptr = 1;
 					//break;
+
+					if(is_in_buffer==0){
 					//Send out NACKS
-					for(j=my_timestamp[i]+1; j<incoming_vector[i]; j++){
-						int seq = j;
-						int dest = map[i];
-						debugprintf("Sending NACK for seq=%d\n", seq);
-						send_nack(seq, dest);
+						for(j=my_timestamp[i]+1; j<incoming_vector[i]; j++){
+							int seq = j;
+							int dest = map[i];
+							debugprintf("Sending NACK for seq=%d\n", seq);
+							send_nack(seq, dest);
+						}
 					}
 				}
 		}
