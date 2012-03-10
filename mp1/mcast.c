@@ -282,6 +282,7 @@ void receive(int source, const char *message, int len) {
 				curr = curr->next;
 				//pop and deliver
 				pop(&old_curr, 1);
+				curr =list_head ;
 
 			}
 		/*	if(is_buffer ==0 && is_reject ==0){
