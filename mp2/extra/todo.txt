@@ -1,0 +1,3 @@
+TODO
+
+1) figure 4 and figure 7 in the Chord paper (http://courses.engr.illinois.edu/ece428/spring2012/papers/chord.pdf). There are subtleties/corner cases in these algorithms that are not shown in those figures, so make sure you trace their steps (for example, using the 3- and then 4-node examples with m=3 shown in the paper), work them out, and catch these subtleties.
