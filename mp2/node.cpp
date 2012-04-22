@@ -7,8 +7,191 @@
 #include <vector>
 #include <math.h>
 #include <stdio.h>
+#include <map>
+#include <iostream>
 
-    /*
+using namespace std;
+
+struct ftable_entry{
+
+	long id;
+	long port;
+};
+
+struct file_info{
+
+	string name;
+	string data;
+};
+
+/* Function prototypes */
+string get_ADD_FILE_result_as_string(const char *fname, const int32_t key, const int32_t nodeId);
+string get_DEL_FILE_result_as_string(const char *fname, const int32_t key, const bool deleted, const int32_t nodeId);
+string get_GET_FILE_result_as_string(const char *fname,const int32_t key,const bool found,const int32_t nodeId,const char *fdata);
+string get_GET_TABLE_result_as_string(const vector<ftable_entry>& finger_table,const uint32_t m,const uint32_t myid,
+											const uint32_t idx_of_entry1,const std::map<int32_t, file_info>& keys_table);
+string get_finger_table_as_string(const std::vector<ftable_entry>& table,const uint32_t m,const uint32_t myid, const uint32_t idx_of_entry1);
+string get_keys_table_as_string(const std::map<int32_t, file_info>& table);
+void check_usage(int);
+void parse_args(int argc, char **argv);
+
+
+
+
+/*	Globals */	
+int opt;
+int long_index;
+
+int m = -1;
+int id = -1;
+int port = -1;
+int introducerPort = -1;
+int stabilizeInterval = -1;
+int fixInterval = -1;
+int seed = -1;
+const char *logconffile = NULL;
+ 
+
+/********************************************************/
+
+/* use the following for the main function of your Chord-node file
+ * (e.g., analogous to the "MyService_server.cpp" in the thrift
+ * example).
+ */
+
+#include <getopt.h>
+#include <stdarg.h>
+#include <assert.h>
+#include <stdlib.h>
+
+int main(int argc, char **argv) {
+    //INIT_LOCAL_LOGGER();
+	
+	check_usage(argc);
+	parse_args(argc, argv);
+
+    // configureLogging(logconffile);     /* if you want to use the log4cxx, uncomment this */
+
+    assert((m >= 3) && (m <= 10));
+
+    assert((id >= 0) && (id < pow(2,m)));
+
+    assert (port > 0);
+
+    srand(seed);
+}
+
+
+void check_usage(int argc){
+
+	if(argc<4){
+		cout<<"Usage: ./node --m --id --port (--introducerPort) (--stabilizeInterval) (--fixInterval) (--seed) (--logConf)\n";
+		cout<<"Exiting...\n";
+		exit(-1);
+	}
+}
+
+void parse_args(int argc, char **argv){
+
+    struct option long_options[] = {
+        /* mandatory args */
+
+        {"m", required_argument, 0, 1000},
+
+        /* id of this node: 0 for introducer */
+        {"id", required_argument, 0, 1001},
+
+        /* port THIS node will listen on, at least for the
+         * Chord-related API/service
+         */
+        {"port", required_argument, 0, 1002},
+
+
+
+        /* optional args */
+
+        /* if not introducer (id != 0), then this is required: port
+         * the introducer is listening on.
+         */
+        {"introducerPort", required_argument, 0, 1003},
+
+        /* path to the log configuration file */
+        {"logConf", required_argument, 0, 1004},
+
+        /* intervals (seconds) for runs of the stabilization and
+         * fixfinger algorithms */
+        {"stabilizeInterval", required_argument, 0, 1005},
+        {"fixInterval", required_argument, 0, 1006},
+
+        {"seed", required_argument, 0, 1007},
+
+        {0, 0, 0, 0},
+    };
+
+
+    while ((opt = getopt_long(argc, argv, "", long_options, &long_index)) != -1)
+    {
+
+        switch (opt) {
+        case 0:
+            if (long_options[long_index].flag != 0) {
+                break;
+            }
+            printf("option %s ", long_options[long_index].name);
+            if (optarg) {
+                printf("with arg %s\n", optarg);
+            }
+            printf("\n");
+            break;
+
+        case 1000:
+
+            m = strtol(optarg, NULL, 10);
+            assert((m >= 3) && (m <= 10));
+            break;
+
+        case 1001:
+            id = strtol(optarg, NULL, 10);
+            assert(id >= 0);
+            break;
+
+        case 1002:
+            port = strtol(optarg, NULL, 10);
+            assert(port > 0);
+            break;
+
+        case 1003:
+            introducerPort = strtol(optarg, NULL, 10);
+            assert(introducerPort > 0);
+            break;
+
+        case 1004:
+            logconffile = optarg;
+            break;
+
+        case 1005:
+            stabilizeInterval = strtol(optarg, NULL, 10);
+            assert(stabilizeInterval > 0);
+            break;
+
+        case 1006:
+            fixInterval = strtol(optarg, NULL, 10);
+            assert(fixInterval > 0);
+            break;
+
+        case 1007:
+            seed = strtol(optarg, NULL, 10);
+            break;
+
+        default:
+            exit(1);
+        }
+    }
+
+
+
+}
+/*
      * example output:
 fname= foo.c
 key= 3
@@ -112,18 +295,15 @@ keys table:
     *
     */
     string get_GET_TABLE_result_as_string(
-        const vector<...>& finger_table,
+        const vector<ftable_entry>& finger_table,
         const uint32_t m,
         const uint32_t myid,
         const uint32_t idx_of_entry1,
-        const std::map<int32_t, ...>& keys_table)
+        const std::map<int32_t, file_info>& keys_table)
     {
         return get_finger_table_as_string(
-            finger_table, m, myid, idx_of_entry1) \
-            + \
-            get_keys_table_as_string(keys_table);
+            finger_table, m, myid, idx_of_entry1) + get_keys_table_as_string(keys_table);
     }
-
 
 
 /*
@@ -141,7 +321,7 @@ keys table:
  */
 
 std::string
-get_finger_table_as_string(const std::vector<...>& table,
+get_finger_table_as_string(const std::vector<ftable_entry>& table,
                            const uint32_t m,
                            const uint32_t myid,
                            const uint32_t idx_of_entry1)
@@ -176,10 +356,10 @@ get_finger_table_as_string(const std::vector<...>& table,
  */
 
 std::string
-get_keys_table_as_string(const std::map<int32_t, ...>& table)
+get_keys_table_as_string(const std::map<int32_t, file_info>& table)
 {
     std::stringstream s;
-    std::map<int32_t, ...>::const_iterator it = table.begin();
+    std::map<int32_t, file_info>::const_iterator it = table.begin();
     /* std::map keeps the keys sorted, so our iteration will be in
      * ascending order of the keys
      */
@@ -195,131 +375,3 @@ get_keys_table_as_string(const std::map<int32_t, ...>& table)
     return s.str();
 }
 
-
-/********************************************************/
-
-/* use the following for the main function of your Chord-node file
- * (e.g., analogous to the "MyService_server.cpp" in the thrift
- * example).
- */
-
-#include <getopt.h>
-#include <stdarg.h>
-#include <assert.h>
-#include <stdlib.h>
-
-int main(int argc, char **argv) {
-    INIT_LOCAL_LOGGER();
-    int opt;
-    int long_index;
-
-    int m = -1;
-    int id = -1;
-    int port = -1;
-    int introducerPort = -1;
-    int stabilizeInterval = -1;
-    int fixInterval = -1;
-    int seed = -1;
-    const char *logconffile = NULL;
-
-    struct option long_options[] = {
-        /* mandatory args */
-
-        {"m", required_argument, 0, 1000},
-
-        /* id of this node: 0 for introducer */
-        {"id", required_argument, 0, 1001},
-
-        /* port THIS node will listen on, at least for the
-         * Chord-related API/service
-         */
-        {"port", required_argument, 0, 1002},
-
-
-
-        /* optional args */
-
-        /* if not introducer (id != 0), then this is required: port
-         * the introducer is listening on.
-         */
-        {"introducerPort", required_argument, 0, 1003},
-
-        /* path to the log configuration file */
-        {"logConf", required_argument, 0, 1004},
-
-        /* intervals (seconds) for runs of the stabilization and
-         * fixfinger algorithms */
-        {"stabilizeInterval", required_argument, 0, 1005},
-        {"fixInterval", required_argument, 0, 1006},
-
-        {"seed", required_argument, 0, 1007},
-
-        {0, 0, 0, 0},
-    };
-    while ((opt = getopt_long(argc, argv, "", long_options, &long_index)) != -1)
-    {
-        switch (opt) {
-        case 0:
-            if (long_options[long_index].flag != 0) {
-                break;
-            }
-            printf("option %s ", long_options[long_index].name);
-            if (optarg) {
-                printf("with arg %s\n", optarg);
-            }
-            printf("\n");
-            break;
-
-        case 1000:
-            m = strtol(optarg, NULL, 10);
-            assert((m >= 3) && (m <= 10));
-            break;
-
-        case 1001:
-            id = strtol(optarg, NULL, 10);
-            assert(id >= 0);
-            break;
-
-        case 1002:
-            port = strtol(optarg, NULL, 10);
-            assert(port > 0);
-            break;
-
-        case 1003:
-            introducerPort = strtol(optarg, NULL, 10);
-            assert(introducerPort > 0);
-            break;
-
-        case 1004:
-            logconffile = optarg;
-            break;
-
-        case 1005:
-            stabilizeInterval = strtol(optarg, NULL, 10);
-            assert(stabilizeInterval > 0);
-            break;
-
-        case 1006:
-            fixInterval = strtol(optarg, NULL, 10);
-            assert(fixInterval > 0);
-            break;
-
-        case 1007:
-            seed = strtol(optarg, NULL, 10);
-            break;
-
-        default:
-            exit(1);
-        }
-    }
-
-    /* if you want to use the log4cxx, uncomment this */
-    // configureLogging(logconffile);
-
-    assert((m >= 3) && (m <= 10));
-
-    assert((id >= 0) && (id < pow(2,m)));
-
-    assert (port > 0);
-
-    srand(seed);
