@@ -1,27 +1,25 @@
-# Lines that start with a # are comments
+GEN_SRC := MyService.cpp mp2_constants.cpp mp2_types.cpp
+GEN_OBJ := $(patsubst %.cpp,%.o, $(GEN_SRC))
+CXX += -DHAVE_NETINET_IN_H -g
+THRIFT_DIR := /class/ece428/libs/include/thrift
+BOOST_DIR := /usr/local/include
 
-OBJS = node.o listener.o 
-EXE1 = node
-EXE2 = listener
+INC += -I$(THRIFT_DIR) -I$(BOOST_DIR)
 
-COMPILER = g++
-COMPILER_FLAGS = -c -g -O0 -Wall -Wparentheses -Wreturn-type -Wmissing-braces
-LINKER = g++
-LINKER_FLAGS = -lpthread
+LINK += -L/class/ece428/libs/lib -Wl,-rpath,/class/ece428/libs/lib
 
-all : clear $(EXE1) $(EXE2)
+.PHONY: all clean
 
-$(EXE1) : node.o
-	$(LINKER) node.o $(LINKER_FLAGS) -o $(EXE1)
+all: my_server my_client
 
-node.o : node.cpp 
-	$(COMPILER) $(COMPILER_FLAGS) node.cpp
- 		
-$(EXE2) : listener.o
-	$(LINKER) listener.o $(LINKER_FLAGS) -o $(EXE2)
+%.o: %.cpp
+	$(CXX) -Wall $(INC) -c $< -o $@
 
-listener.o : listener.cpp 
-	$(COMPILER) $(COMPILER_FLAGS) listener.cpp
+my_server: MyService_server.o $(GEN_OBJ)
+	$(CXX) $(LINK) -lthrift $^ -o $@
 
-clean : 
-	rm -f *.o $(EXE1) $(EXE2) 2>/dev/null
+my_client: MyService_client.o $(GEN_OBJ)
+	$(CXX) $(LINK) -lthrift $^ -o $@
+
+clean:
+	$(RM) *.o my_server my_client

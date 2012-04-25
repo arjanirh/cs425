@@ -1,0 +1,36 @@
+# Lines that start with a # are comments
+
+THRIFT_DIR := /class/ece428/libs/include/thrift
+BOOST_DIR := /usr/local/include
+
+OBJS = node.o listener.o 
+EXE1 = node
+EXE2 = listener
+
+COMPILER = g++
+COMPILER_FLAGS = -c -g -O0 -Wall -Wparentheses -Wreturn-type -Wmissing-braces
+COMPILER_FLAGS += -DHAVE_NETINET_IN_H
+INC += -I$(THRIFT_DIR) -I$(BOOST_DIR)
+
+LINKER = g++
+LINKER_FLAGS = -lpthread
+LINKER_FLAGS += -L/class/ece428/libs/lib -Wl,-rpath,/class/ece428/libs/lib
+
+.PHONY: all clean
+
+all : clear $(EXE1) $(EXE2) my_server my_client
+
+$(EXE1) : node.o
+	$(LINKER) node.o $(LINKER_FLAGS) -o $(EXE1)
+
+node.o : node.cpp 
+	$(COMPILER) $(COMPILER_FLAGS) node.cpp
+		
+$(EXE2) : listener.o
+	$(LINKER) listener.o $(LINKER_FLAGS) -o $(EXE2)
+
+listener.o : listener.cpp 
+	$(COMPILER) $(COMPILER_FLAGS) listener.cpp
+
+clean : 
+	rm -f *.o $(EXE1) $(EXE2) 2>/dev/null

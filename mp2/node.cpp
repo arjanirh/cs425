@@ -34,8 +34,16 @@ string get_finger_table_as_string(const std::vector<ftable_entry>& table,const u
 string get_keys_table_as_string(const std::map<int32_t, file_info>& table);
 void check_usage(int);
 void parse_args(int argc, char **argv);
+void make_asserts();
+void setup_successor();
+void setup_finger_table();
+void setup_key_table();
+void setup_listener_thread();
+void setup_stabilize_thread();
+void setup_fixfinger_thread();
 
 
+int find_successor(int key_to_find, int origin_port);
 
 
 /*	Globals */	
@@ -51,6 +59,15 @@ int fixInterval = -1;
 int seed = -1;
 const char *logconffile = NULL;
  
+// My Successor and my predecessor
+struct suc_data my_suc = { 0, port};
+struct suc_data my_pre = {-1, -1};
+
+//finger table: a vector of <(id, port)>
+vector<ftable_entry> ftable;
+
+//key table: a map
+map<int32_t, file_info> key_table; 
 
 /********************************************************/
 
@@ -69,18 +86,145 @@ int main(int argc, char **argv) {
 	
 	check_usage(argc);
 	parse_args(argc, argv);
+	make_asserts();
+    //srand(seed);
+	// configureLogging(logconffile);     /* if you want to use the log4cxx, uncomment this */
+	
+	setup_server();
 
-    // configureLogging(logconffile);     /* if you want to use the log4cxx, uncomment this */
+	setup_successor();
+	setup_finger_table();
+	setup_key_table();
 
-    assert((m >= 3) && (m <= 10));
+	setup_stabilize_thread();
+	setup_fixfinger_thread();
 
-    assert((id >= 0) && (id < pow(2,m)));
-
-    assert (port > 0);
-
-    srand(seed);
+	
+	
 }
 
+void setup_server(){
+
+
+
+
+
+
+
+
+
+
+
+}
+	//TODO: start while(1) thread to receive and parse commands/msgs
+	
+	/*
+	 switch(command){
+
+	case: Add_file
+
+	case: delete file
+
+	case: get file
+
+	case: find_successor
+
+	case: what is your predecessor
+
+	case: you have a new predecessor
+
+	//case: found seccessor
+	
+*/
+
+void setup_stabilize_thread(){
+
+
+}
+
+void setup_fixfinger_thread(){
+
+
+}
+
+/*
+ * if introducer (id=0) 
+ * 	then S=0, P=nil
+ * else
+ * 	find_successor()
+ */
+void setup_successor(){
+
+	//If introducer then I am my suc
+	if(id==0){
+		my_suc.id = 0;
+		my_suc.port = port;
+	}
+	else{
+		//Ask id0 to find my suc
+		
+		//Connect to id0 port
+		my_suc = rpc_find_successor(id);		
+	}
+
+}
+
+
+void setup_finger_table(){
+
+	//if introducer then always copy myself m times into ftable
+	if(id==0){
+		struct ftable_entry entry= { id, port };
+
+		for(int i=0;i<m; i++){
+			ftable.push_back(entry);
+		}
+	}
+	else{
+		//TODO:Copy over successor's ftable
+		
+	}
+}
+
+void setup_key_table(){
+
+	if(id==0){
+		//ignore
+	}
+	else{
+		//TODO: copy from successor
+
+	}
+
+}
+
+
+int find_successor_in_local_ftable(){
+
+
+	return -1;
+}
+
+/* 
+ */
+int find_successor(int key_to_find, int origin_port){
+	
+	//If I need my successor, then ask node0
+
+
+	//else Try to find successor in local ftable
+	
+
+	//If not found, check table for closest predecessor
+	//	if I am closest pred, then send my successor_port (from finger table) to requestor
+	//	else ask closest predecessor for key_to_find
+	
+
+	
+
+
+	return -1;
+}
 
 void check_usage(int argc){
 
@@ -89,6 +233,15 @@ void check_usage(int argc){
 		cout<<"Exiting...\n";
 		exit(-1);
 	}
+}
+
+void make_asserts(){
+
+    assert((m >= 3) && (m <= 10));
+
+    assert((id >= 0) && (id < pow(2,m)));
+
+    assert (port > 0);
 }
 
 void parse_args(int argc, char **argv){
