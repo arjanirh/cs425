@@ -15,9 +15,13 @@ namespace mp2 {
 class MyServiceIf {
  public:
   virtual ~MyServiceIf() {}
-  virtual void rpc_find_successor(suc_data& _return, const int32_t key) = 0;
-  virtual void rpc_give_local_successor(suc_data& _return) = 0;
-  virtual void find_predecessor(suc_data& _return, const int32_t key) = 0;
+  virtual void rpc_find_successor(node_info& _return, const int32_t key) = 0;
+  virtual void rpc_give_local_successor(node_info& _return) = 0;
+  virtual void find_predecessor(node_info& _return, const int32_t key) = 0;
+  virtual void rpc_return_finger_table(std::vector<node_info> & _return) = 0;
+  virtual void rpc_return_key_table(std::map<int32_t, file_info> & _return) = 0;
+  virtual void rpc_return_predecessor(node_info& _return) = 0;
+  virtual void rpc_notify_of_predecessor(const node_info& new_pre) = 0;
 };
 
 class MyServiceIfFactory {
@@ -47,13 +51,25 @@ class MyServiceIfSingletonFactory : virtual public MyServiceIfFactory {
 class MyServiceNull : virtual public MyServiceIf {
  public:
   virtual ~MyServiceNull() {}
-  void rpc_find_successor(suc_data& /* _return */, const int32_t /* key */) {
+  void rpc_find_successor(node_info& /* _return */, const int32_t /* key */) {
     return;
   }
-  void rpc_give_local_successor(suc_data& /* _return */) {
+  void rpc_give_local_successor(node_info& /* _return */) {
     return;
   }
-  void find_predecessor(suc_data& /* _return */, const int32_t /* key */) {
+  void find_predecessor(node_info& /* _return */, const int32_t /* key */) {
+    return;
+  }
+  void rpc_return_finger_table(std::vector<node_info> & /* _return */) {
+    return;
+  }
+  void rpc_return_key_table(std::map<int32_t, file_info> & /* _return */) {
+    return;
+  }
+  void rpc_return_predecessor(node_info& /* _return */) {
+    return;
+  }
+  void rpc_notify_of_predecessor(const node_info& /* new_pre */) {
     return;
   }
 };
@@ -122,11 +138,11 @@ class MyService_rpc_find_successor_result {
 
   virtual ~MyService_rpc_find_successor_result() throw() {}
 
-  suc_data success;
+  node_info success;
 
   _MyService_rpc_find_successor_result__isset __isset;
 
-  void __set_success(const suc_data& val) {
+  void __set_success(const node_info& val) {
     success = val;
   }
 
@@ -158,7 +174,7 @@ class MyService_rpc_find_successor_presult {
 
   virtual ~MyService_rpc_find_successor_presult() throw() {}
 
-  suc_data* success;
+  node_info* success;
 
   _MyService_rpc_find_successor_presult__isset __isset;
 
@@ -216,11 +232,11 @@ class MyService_rpc_give_local_successor_result {
 
   virtual ~MyService_rpc_give_local_successor_result() throw() {}
 
-  suc_data success;
+  node_info success;
 
   _MyService_rpc_give_local_successor_result__isset __isset;
 
-  void __set_success(const suc_data& val) {
+  void __set_success(const node_info& val) {
     success = val;
   }
 
@@ -252,7 +268,7 @@ class MyService_rpc_give_local_successor_presult {
 
   virtual ~MyService_rpc_give_local_successor_presult() throw() {}
 
-  suc_data* success;
+  node_info* success;
 
   _MyService_rpc_give_local_successor_presult__isset __isset;
 
@@ -324,11 +340,11 @@ class MyService_find_predecessor_result {
 
   virtual ~MyService_find_predecessor_result() throw() {}
 
-  suc_data success;
+  node_info success;
 
   _MyService_find_predecessor_result__isset __isset;
 
-  void __set_success(const suc_data& val) {
+  void __set_success(const node_info& val) {
     success = val;
   }
 
@@ -360,9 +376,379 @@ class MyService_find_predecessor_presult {
 
   virtual ~MyService_find_predecessor_presult() throw() {}
 
-  suc_data* success;
+  node_info* success;
 
   _MyService_find_predecessor_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+
+class MyService_rpc_return_finger_table_args {
+ public:
+
+  MyService_rpc_return_finger_table_args() {
+  }
+
+  virtual ~MyService_rpc_return_finger_table_args() throw() {}
+
+
+  bool operator == (const MyService_rpc_return_finger_table_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const MyService_rpc_return_finger_table_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_return_finger_table_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class MyService_rpc_return_finger_table_pargs {
+ public:
+
+
+  virtual ~MyService_rpc_return_finger_table_pargs() throw() {}
+
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_return_finger_table_result__isset {
+  _MyService_rpc_return_finger_table_result__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_return_finger_table_result__isset;
+
+class MyService_rpc_return_finger_table_result {
+ public:
+
+  MyService_rpc_return_finger_table_result() {
+  }
+
+  virtual ~MyService_rpc_return_finger_table_result() throw() {}
+
+  std::vector<node_info>  success;
+
+  _MyService_rpc_return_finger_table_result__isset __isset;
+
+  void __set_success(const std::vector<node_info> & val) {
+    success = val;
+  }
+
+  bool operator == (const MyService_rpc_return_finger_table_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_return_finger_table_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_return_finger_table_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_return_finger_table_presult__isset {
+  _MyService_rpc_return_finger_table_presult__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_return_finger_table_presult__isset;
+
+class MyService_rpc_return_finger_table_presult {
+ public:
+
+
+  virtual ~MyService_rpc_return_finger_table_presult() throw() {}
+
+  std::vector<node_info> * success;
+
+  _MyService_rpc_return_finger_table_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+
+class MyService_rpc_return_key_table_args {
+ public:
+
+  MyService_rpc_return_key_table_args() {
+  }
+
+  virtual ~MyService_rpc_return_key_table_args() throw() {}
+
+
+  bool operator == (const MyService_rpc_return_key_table_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const MyService_rpc_return_key_table_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_return_key_table_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class MyService_rpc_return_key_table_pargs {
+ public:
+
+
+  virtual ~MyService_rpc_return_key_table_pargs() throw() {}
+
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_return_key_table_result__isset {
+  _MyService_rpc_return_key_table_result__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_return_key_table_result__isset;
+
+class MyService_rpc_return_key_table_result {
+ public:
+
+  MyService_rpc_return_key_table_result() {
+  }
+
+  virtual ~MyService_rpc_return_key_table_result() throw() {}
+
+  std::map<int32_t, file_info>  success;
+
+  _MyService_rpc_return_key_table_result__isset __isset;
+
+  void __set_success(const std::map<int32_t, file_info> & val) {
+    success = val;
+  }
+
+  bool operator == (const MyService_rpc_return_key_table_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_return_key_table_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_return_key_table_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_return_key_table_presult__isset {
+  _MyService_rpc_return_key_table_presult__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_return_key_table_presult__isset;
+
+class MyService_rpc_return_key_table_presult {
+ public:
+
+
+  virtual ~MyService_rpc_return_key_table_presult() throw() {}
+
+  std::map<int32_t, file_info> * success;
+
+  _MyService_rpc_return_key_table_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+
+class MyService_rpc_return_predecessor_args {
+ public:
+
+  MyService_rpc_return_predecessor_args() {
+  }
+
+  virtual ~MyService_rpc_return_predecessor_args() throw() {}
+
+
+  bool operator == (const MyService_rpc_return_predecessor_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const MyService_rpc_return_predecessor_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_return_predecessor_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class MyService_rpc_return_predecessor_pargs {
+ public:
+
+
+  virtual ~MyService_rpc_return_predecessor_pargs() throw() {}
+
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_return_predecessor_result__isset {
+  _MyService_rpc_return_predecessor_result__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_return_predecessor_result__isset;
+
+class MyService_rpc_return_predecessor_result {
+ public:
+
+  MyService_rpc_return_predecessor_result() {
+  }
+
+  virtual ~MyService_rpc_return_predecessor_result() throw() {}
+
+  node_info success;
+
+  _MyService_rpc_return_predecessor_result__isset __isset;
+
+  void __set_success(const node_info& val) {
+    success = val;
+  }
+
+  bool operator == (const MyService_rpc_return_predecessor_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_return_predecessor_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_return_predecessor_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_return_predecessor_presult__isset {
+  _MyService_rpc_return_predecessor_presult__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_return_predecessor_presult__isset;
+
+class MyService_rpc_return_predecessor_presult {
+ public:
+
+
+  virtual ~MyService_rpc_return_predecessor_presult() throw() {}
+
+  node_info* success;
+
+  _MyService_rpc_return_predecessor_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+typedef struct _MyService_rpc_notify_of_predecessor_args__isset {
+  _MyService_rpc_notify_of_predecessor_args__isset() : new_pre(false) {}
+  bool new_pre;
+} _MyService_rpc_notify_of_predecessor_args__isset;
+
+class MyService_rpc_notify_of_predecessor_args {
+ public:
+
+  MyService_rpc_notify_of_predecessor_args() {
+  }
+
+  virtual ~MyService_rpc_notify_of_predecessor_args() throw() {}
+
+  node_info new_pre;
+
+  _MyService_rpc_notify_of_predecessor_args__isset __isset;
+
+  void __set_new_pre(const node_info& val) {
+    new_pre = val;
+  }
+
+  bool operator == (const MyService_rpc_notify_of_predecessor_args & rhs) const
+  {
+    if (!(new_pre == rhs.new_pre))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_notify_of_predecessor_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_notify_of_predecessor_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class MyService_rpc_notify_of_predecessor_pargs {
+ public:
+
+
+  virtual ~MyService_rpc_notify_of_predecessor_pargs() throw() {}
+
+  const node_info* new_pre;
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class MyService_rpc_notify_of_predecessor_result {
+ public:
+
+  MyService_rpc_notify_of_predecessor_result() {
+  }
+
+  virtual ~MyService_rpc_notify_of_predecessor_result() throw() {}
+
+
+  bool operator == (const MyService_rpc_notify_of_predecessor_result & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const MyService_rpc_notify_of_predecessor_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_notify_of_predecessor_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class MyService_rpc_notify_of_predecessor_presult {
+ public:
+
+
+  virtual ~MyService_rpc_notify_of_predecessor_presult() throw() {}
+
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
 
@@ -388,15 +774,27 @@ class MyServiceClient : virtual public MyServiceIf {
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
     return poprot_;
   }
-  void rpc_find_successor(suc_data& _return, const int32_t key);
+  void rpc_find_successor(node_info& _return, const int32_t key);
   void send_rpc_find_successor(const int32_t key);
-  void recv_rpc_find_successor(suc_data& _return);
-  void rpc_give_local_successor(suc_data& _return);
+  void recv_rpc_find_successor(node_info& _return);
+  void rpc_give_local_successor(node_info& _return);
   void send_rpc_give_local_successor();
-  void recv_rpc_give_local_successor(suc_data& _return);
-  void find_predecessor(suc_data& _return, const int32_t key);
+  void recv_rpc_give_local_successor(node_info& _return);
+  void find_predecessor(node_info& _return, const int32_t key);
   void send_find_predecessor(const int32_t key);
-  void recv_find_predecessor(suc_data& _return);
+  void recv_find_predecessor(node_info& _return);
+  void rpc_return_finger_table(std::vector<node_info> & _return);
+  void send_rpc_return_finger_table();
+  void recv_rpc_return_finger_table(std::vector<node_info> & _return);
+  void rpc_return_key_table(std::map<int32_t, file_info> & _return);
+  void send_rpc_return_key_table();
+  void recv_rpc_return_key_table(std::map<int32_t, file_info> & _return);
+  void rpc_return_predecessor(node_info& _return);
+  void send_rpc_return_predecessor();
+  void recv_rpc_return_predecessor(node_info& _return);
+  void rpc_notify_of_predecessor(const node_info& new_pre);
+  void send_rpc_notify_of_predecessor(const node_info& new_pre);
+  void recv_rpc_notify_of_predecessor();
  protected:
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
@@ -413,12 +811,20 @@ class MyServiceProcessor : public ::apache::thrift::TProcessor {
   void process_rpc_find_successor(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_rpc_give_local_successor(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_find_predecessor(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_rpc_return_finger_table(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_rpc_return_key_table(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_rpc_return_predecessor(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_rpc_notify_of_predecessor(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
  public:
   MyServiceProcessor(boost::shared_ptr<MyServiceIf> iface) :
     iface_(iface) {
     processMap_["rpc_find_successor"] = &MyServiceProcessor::process_rpc_find_successor;
     processMap_["rpc_give_local_successor"] = &MyServiceProcessor::process_rpc_give_local_successor;
     processMap_["find_predecessor"] = &MyServiceProcessor::process_find_predecessor;
+    processMap_["rpc_return_finger_table"] = &MyServiceProcessor::process_rpc_return_finger_table;
+    processMap_["rpc_return_key_table"] = &MyServiceProcessor::process_rpc_return_key_table;
+    processMap_["rpc_return_predecessor"] = &MyServiceProcessor::process_rpc_return_predecessor;
+    processMap_["rpc_notify_of_predecessor"] = &MyServiceProcessor::process_rpc_notify_of_predecessor;
   }
 
   virtual bool process(boost::shared_ptr<apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr<apache::thrift::protocol::TProtocol> poprot, void* callContext);
@@ -448,7 +854,7 @@ class MyServiceMultiface : virtual public MyServiceIf {
     ifaces_.push_back(iface);
   }
  public:
-  void rpc_find_successor(suc_data& _return, const int32_t key) {
+  void rpc_find_successor(node_info& _return, const int32_t key) {
     size_t sz = ifaces_.size();
     for (size_t i = 0; i < sz; ++i) {
       if (i == sz - 1) {
@@ -460,7 +866,7 @@ class MyServiceMultiface : virtual public MyServiceIf {
     }
   }
 
-  void rpc_give_local_successor(suc_data& _return) {
+  void rpc_give_local_successor(node_info& _return) {
     size_t sz = ifaces_.size();
     for (size_t i = 0; i < sz; ++i) {
       if (i == sz - 1) {
@@ -472,7 +878,7 @@ class MyServiceMultiface : virtual public MyServiceIf {
     }
   }
 
-  void find_predecessor(suc_data& _return, const int32_t key) {
+  void find_predecessor(node_info& _return, const int32_t key) {
     size_t sz = ifaces_.size();
     for (size_t i = 0; i < sz; ++i) {
       if (i == sz - 1) {
@@ -481,6 +887,49 @@ class MyServiceMultiface : virtual public MyServiceIf {
       } else {
         ifaces_[i]->find_predecessor(_return, key);
       }
+    }
+  }
+
+  void rpc_return_finger_table(std::vector<node_info> & _return) {
+    size_t sz = ifaces_.size();
+    for (size_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->rpc_return_finger_table(_return);
+        return;
+      } else {
+        ifaces_[i]->rpc_return_finger_table(_return);
+      }
+    }
+  }
+
+  void rpc_return_key_table(std::map<int32_t, file_info> & _return) {
+    size_t sz = ifaces_.size();
+    for (size_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->rpc_return_key_table(_return);
+        return;
+      } else {
+        ifaces_[i]->rpc_return_key_table(_return);
+      }
+    }
+  }
+
+  void rpc_return_predecessor(node_info& _return) {
+    size_t sz = ifaces_.size();
+    for (size_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->rpc_return_predecessor(_return);
+        return;
+      } else {
+        ifaces_[i]->rpc_return_predecessor(_return);
+      }
+    }
+  }
+
+  void rpc_notify_of_predecessor(const node_info& new_pre) {
+    size_t sz = ifaces_.size();
+    for (size_t i = 0; i < sz; ++i) {
+      ifaces_[i]->rpc_notify_of_predecessor(new_pre);
     }
   }
 

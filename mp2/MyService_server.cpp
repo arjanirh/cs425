@@ -22,6 +22,11 @@ class MyServiceHandler : virtual public MyServiceIf {
     // Your initialization goes here
   }
 
+  void rpc_return_finger_table(std::vector<node_info> & _return) {
+	_return = ftable;
+
+	}
+
   void rpc_find_successor(suc_data& _return, const int32_t key) {
     // Your implementation goes here
     printf("rpc_find_successor\n");
@@ -93,6 +98,20 @@ class MyServiceHandler : virtual public MyServiceIf {
 			_return = ftable[i];
 			return;
 		}
+	}
+  }
+
+  void rpc_return_key_table(std::map<int32_t, file_info> & _return) {
+  	_return = key_table;
+  }
+
+  void rpc_return_predecessor(node_info& _return) {
+  	_return = my_pre;
+  }
+
+  void rpc_notify_of_predecessor(const node_info& new_pre) {
+	if(my_pre.id == -1 || (new_pre.id > my_pre.id && new_pre.id < id)){
+		my_pre = new_pre;
 	}
   }
 

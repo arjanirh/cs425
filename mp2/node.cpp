@@ -69,6 +69,9 @@ vector<node_info> ftable;
 //key table: a map
 map<int32_t, file_info> key_table; 
 
+pthread_t stabilize_thread;
+
+
 /********************************************************/
 
 /* use the following for the main function of your Chord-node file
@@ -90,14 +93,16 @@ int main(int argc, char **argv) {
     //srand(seed);
 	// configureLogging(logconffile);     /* if you want to use the log4cxx, uncomment this */
 	
+	//Node Join:
 	setup_server();
 
 	setup_successor();
 	setup_finger_table();
 	setup_key_table();
 
-	setup_stabilize_thread();
+	setup_stabilize_thread();			//FIX keys also
 	setup_fixfinger_thread();
+
 
 	
 	
@@ -106,39 +111,40 @@ int main(int argc, char **argv) {
 void setup_server(){
 
 
+}
 
+/*
+ * Ask suc for pred, if diff than me, then set, and notify new succ
+ */ 
+void *stabilize(){
+	
+	while(1){
+		//Connect to suc.port
+		
+		struct node_info recd_pre = rpc_return_predecessor();
+		
+		int inflated_suc_id = my_suc.id;
+		if(my_suc.id == 0)
+			inflated_suc_id = pow(2,m);
+		if(recd_pre.id > id && recd_pre.id < inflated_suc_id){
+			my_suc = recd_pre;
+		}
+	
+		//Now notify successor that i am your pred
+		//Connect to suc.port --NEED THIS AGAIN because suc might have changed in the if case
+		struct node_info my_node_info = {id, port};
+		rpc_notify_of_predecessor(my_node_info);
 
-
-
-
-
-
-
+		//Sleep for an interval
+		sleep(stabilizeInterval);
+	}
 
 }
-	//TODO: start while(1) thread to receive and parse commands/msgs
-	
-	/*
-	 switch(command){
 
-	case: Add_file
-
-	case: delete file
-
-	case: get file
-
-	case: find_successor
-
-	case: what is your predecessor
-
-	case: you have a new predecessor
-
-	//case: found seccessor
-	
-*/
-
+// Make thread 
 void setup_stabilize_thread(){
 
+	pthread_create(&stabilize_thread, NULL, stabilize, NULL);	
 
 }
 
@@ -164,6 +170,7 @@ void setup_successor(){
 		//Ask id0 to find my suc
 		
 		//Connect to id0 port
+		//Add thrift code here
 		my_suc = rpc_find_successor(id);		
 	}
 
@@ -182,6 +189,9 @@ void setup_finger_table(){
 	}
 	else{
 		//TODO:Copy over successor's ftable
+
+		//Thrift: connect to my_suc.port
+		ftable = rpc_return_finger_table();
 		
 	}
 }
@@ -194,6 +204,8 @@ void setup_key_table(){
 	else{
 		//TODO: copy from successor
 
+		//Thrift: connect to my_suc.port
+		key_table = rpc_return_key_table();
 	}
 
 }

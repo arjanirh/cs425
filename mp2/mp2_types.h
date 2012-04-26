@@ -16,27 +16,27 @@
 
 namespace mp2 {
 
-typedef struct _suc_data__isset {
-  _suc_data__isset() : id(false), port(false) {}
+typedef struct _node_info__isset {
+  _node_info__isset() : id(false), port(false) {}
   bool id;
   bool port;
-} _suc_data__isset;
+} _node_info__isset;
 
-class suc_data {
+class node_info {
  public:
 
   static const char* ascii_fingerprint; // = "989D1F1AE8D148D5E2119FFEC4BBBEE3";
   static const uint8_t binary_fingerprint[16]; // = {0x98,0x9D,0x1F,0x1A,0xE8,0xD1,0x48,0xD5,0xE2,0x11,0x9F,0xFE,0xC4,0xBB,0xBE,0xE3};
 
-  suc_data() : id(0), port(0) {
+  node_info() : id(0), port(0) {
   }
 
-  virtual ~suc_data() throw() {}
+  virtual ~node_info() throw() {}
 
   int32_t id;
   int32_t port;
 
-  _suc_data__isset __isset;
+  _node_info__isset __isset;
 
   void __set_id(const int32_t val) {
     id = val;
@@ -46,7 +46,7 @@ class suc_data {
     port = val;
   }
 
-  bool operator == (const suc_data & rhs) const
+  bool operator == (const node_info & rhs) const
   {
     if (!(id == rhs.id))
       return false;
@@ -54,11 +54,60 @@ class suc_data {
       return false;
     return true;
   }
-  bool operator != (const suc_data &rhs) const {
+  bool operator != (const node_info &rhs) const {
     return !(*this == rhs);
   }
 
-  bool operator < (const suc_data & ) const;
+  bool operator < (const node_info & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _file_info__isset {
+  _file_info__isset() : name(false), data(false) {}
+  bool name;
+  bool data;
+} _file_info__isset;
+
+class file_info {
+ public:
+
+  static const char* ascii_fingerprint; // = "07A9615F837F7D0A952B595DD3020972";
+  static const uint8_t binary_fingerprint[16]; // = {0x07,0xA9,0x61,0x5F,0x83,0x7F,0x7D,0x0A,0x95,0x2B,0x59,0x5D,0xD3,0x02,0x09,0x72};
+
+  file_info() : name(""), data("") {
+  }
+
+  virtual ~file_info() throw() {}
+
+  std::string name;
+  std::string data;
+
+  _file_info__isset __isset;
+
+  void __set_name(const std::string& val) {
+    name = val;
+  }
+
+  void __set_data(const std::string& val) {
+    data = val;
+  }
+
+  bool operator == (const file_info & rhs) const
+  {
+    if (!(name == rhs.name))
+      return false;
+    if (!(data == rhs.data))
+      return false;
+    return true;
+  }
+  bool operator != (const file_info &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const file_info & ) const;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
