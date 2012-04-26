@@ -15,8 +15,9 @@ namespace mp2 {
 class MyServiceIf {
  public:
   virtual ~MyServiceIf() {}
-  virtual void rpc_find_successor2(suc_data& _return, const int32_t key) = 0;
+  virtual void rpc_find_successor(suc_data& _return, const int32_t key) = 0;
   virtual void rpc_give_local_successor(suc_data& _return) = 0;
+  virtual void find_predecessor(suc_data& _return, const int32_t key) = 0;
 };
 
 class MyServiceIfFactory {
@@ -46,46 +47,49 @@ class MyServiceIfSingletonFactory : virtual public MyServiceIfFactory {
 class MyServiceNull : virtual public MyServiceIf {
  public:
   virtual ~MyServiceNull() {}
-  void rpc_find_successor2(suc_data& /* _return */, const int32_t /* key */) {
+  void rpc_find_successor(suc_data& /* _return */, const int32_t /* key */) {
     return;
   }
   void rpc_give_local_successor(suc_data& /* _return */) {
     return;
   }
+  void find_predecessor(suc_data& /* _return */, const int32_t /* key */) {
+    return;
+  }
 };
 
-typedef struct _MyService_rpc_find_successor2_args__isset {
-  _MyService_rpc_find_successor2_args__isset() : key(false) {}
+typedef struct _MyService_rpc_find_successor_args__isset {
+  _MyService_rpc_find_successor_args__isset() : key(false) {}
   bool key;
-} _MyService_rpc_find_successor2_args__isset;
+} _MyService_rpc_find_successor_args__isset;
 
-class MyService_rpc_find_successor2_args {
+class MyService_rpc_find_successor_args {
  public:
 
-  MyService_rpc_find_successor2_args() : key(0) {
+  MyService_rpc_find_successor_args() : key(0) {
   }
 
-  virtual ~MyService_rpc_find_successor2_args() throw() {}
+  virtual ~MyService_rpc_find_successor_args() throw() {}
 
   int32_t key;
 
-  _MyService_rpc_find_successor2_args__isset __isset;
+  _MyService_rpc_find_successor_args__isset __isset;
 
   void __set_key(const int32_t val) {
     key = val;
   }
 
-  bool operator == (const MyService_rpc_find_successor2_args & rhs) const
+  bool operator == (const MyService_rpc_find_successor_args & rhs) const
   {
     if (!(key == rhs.key))
       return false;
     return true;
   }
-  bool operator != (const MyService_rpc_find_successor2_args &rhs) const {
+  bool operator != (const MyService_rpc_find_successor_args &rhs) const {
     return !(*this == rhs);
   }
 
-  bool operator < (const MyService_rpc_find_successor2_args & ) const;
+  bool operator < (const MyService_rpc_find_successor_args & ) const;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
@@ -93,11 +97,11 @@ class MyService_rpc_find_successor2_args {
 };
 
 
-class MyService_rpc_find_successor2_pargs {
+class MyService_rpc_find_successor_pargs {
  public:
 
 
-  virtual ~MyService_rpc_find_successor2_pargs() throw() {}
+  virtual ~MyService_rpc_find_successor_pargs() throw() {}
 
   const int32_t* key;
 
@@ -105,58 +109,58 @@ class MyService_rpc_find_successor2_pargs {
 
 };
 
-typedef struct _MyService_rpc_find_successor2_result__isset {
-  _MyService_rpc_find_successor2_result__isset() : success(false) {}
+typedef struct _MyService_rpc_find_successor_result__isset {
+  _MyService_rpc_find_successor_result__isset() : success(false) {}
   bool success;
-} _MyService_rpc_find_successor2_result__isset;
+} _MyService_rpc_find_successor_result__isset;
 
-class MyService_rpc_find_successor2_result {
+class MyService_rpc_find_successor_result {
  public:
 
-  MyService_rpc_find_successor2_result() {
+  MyService_rpc_find_successor_result() {
   }
 
-  virtual ~MyService_rpc_find_successor2_result() throw() {}
+  virtual ~MyService_rpc_find_successor_result() throw() {}
 
   suc_data success;
 
-  _MyService_rpc_find_successor2_result__isset __isset;
+  _MyService_rpc_find_successor_result__isset __isset;
 
   void __set_success(const suc_data& val) {
     success = val;
   }
 
-  bool operator == (const MyService_rpc_find_successor2_result & rhs) const
+  bool operator == (const MyService_rpc_find_successor_result & rhs) const
   {
     if (!(success == rhs.success))
       return false;
     return true;
   }
-  bool operator != (const MyService_rpc_find_successor2_result &rhs) const {
+  bool operator != (const MyService_rpc_find_successor_result &rhs) const {
     return !(*this == rhs);
   }
 
-  bool operator < (const MyService_rpc_find_successor2_result & ) const;
+  bool operator < (const MyService_rpc_find_successor_result & ) const;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
 };
 
-typedef struct _MyService_rpc_find_successor2_presult__isset {
-  _MyService_rpc_find_successor2_presult__isset() : success(false) {}
+typedef struct _MyService_rpc_find_successor_presult__isset {
+  _MyService_rpc_find_successor_presult__isset() : success(false) {}
   bool success;
-} _MyService_rpc_find_successor2_presult__isset;
+} _MyService_rpc_find_successor_presult__isset;
 
-class MyService_rpc_find_successor2_presult {
+class MyService_rpc_find_successor_presult {
  public:
 
 
-  virtual ~MyService_rpc_find_successor2_presult() throw() {}
+  virtual ~MyService_rpc_find_successor_presult() throw() {}
 
   suc_data* success;
 
-  _MyService_rpc_find_successor2_presult__isset __isset;
+  _MyService_rpc_find_successor_presult__isset __isset;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
 
@@ -256,6 +260,114 @@ class MyService_rpc_give_local_successor_presult {
 
 };
 
+typedef struct _MyService_find_predecessor_args__isset {
+  _MyService_find_predecessor_args__isset() : key(false) {}
+  bool key;
+} _MyService_find_predecessor_args__isset;
+
+class MyService_find_predecessor_args {
+ public:
+
+  MyService_find_predecessor_args() : key(0) {
+  }
+
+  virtual ~MyService_find_predecessor_args() throw() {}
+
+  int32_t key;
+
+  _MyService_find_predecessor_args__isset __isset;
+
+  void __set_key(const int32_t val) {
+    key = val;
+  }
+
+  bool operator == (const MyService_find_predecessor_args & rhs) const
+  {
+    if (!(key == rhs.key))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_find_predecessor_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_find_predecessor_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class MyService_find_predecessor_pargs {
+ public:
+
+
+  virtual ~MyService_find_predecessor_pargs() throw() {}
+
+  const int32_t* key;
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_find_predecessor_result__isset {
+  _MyService_find_predecessor_result__isset() : success(false) {}
+  bool success;
+} _MyService_find_predecessor_result__isset;
+
+class MyService_find_predecessor_result {
+ public:
+
+  MyService_find_predecessor_result() {
+  }
+
+  virtual ~MyService_find_predecessor_result() throw() {}
+
+  suc_data success;
+
+  _MyService_find_predecessor_result__isset __isset;
+
+  void __set_success(const suc_data& val) {
+    success = val;
+  }
+
+  bool operator == (const MyService_find_predecessor_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_find_predecessor_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_find_predecessor_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_find_predecessor_presult__isset {
+  _MyService_find_predecessor_presult__isset() : success(false) {}
+  bool success;
+} _MyService_find_predecessor_presult__isset;
+
+class MyService_find_predecessor_presult {
+ public:
+
+
+  virtual ~MyService_find_predecessor_presult() throw() {}
+
+  suc_data* success;
+
+  _MyService_find_predecessor_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
 class MyServiceClient : virtual public MyServiceIf {
  public:
   MyServiceClient(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) :
@@ -276,12 +388,15 @@ class MyServiceClient : virtual public MyServiceIf {
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
     return poprot_;
   }
-  void rpc_find_successor2(suc_data& _return, const int32_t key);
-  void send_rpc_find_successor2(const int32_t key);
-  void recv_rpc_find_successor2(suc_data& _return);
+  void rpc_find_successor(suc_data& _return, const int32_t key);
+  void send_rpc_find_successor(const int32_t key);
+  void recv_rpc_find_successor(suc_data& _return);
   void rpc_give_local_successor(suc_data& _return);
   void send_rpc_give_local_successor();
   void recv_rpc_give_local_successor(suc_data& _return);
+  void find_predecessor(suc_data& _return, const int32_t key);
+  void send_find_predecessor(const int32_t key);
+  void recv_find_predecessor(suc_data& _return);
  protected:
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
@@ -295,13 +410,15 @@ class MyServiceProcessor : public ::apache::thrift::TProcessor {
   virtual bool process_fn(apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, std::string& fname, int32_t seqid, void* callContext);
  private:
   std::map<std::string, void (MyServiceProcessor::*)(int32_t, apache::thrift::protocol::TProtocol*, apache::thrift::protocol::TProtocol*, void*)> processMap_;
-  void process_rpc_find_successor2(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_rpc_find_successor(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_rpc_give_local_successor(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_find_predecessor(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
  public:
   MyServiceProcessor(boost::shared_ptr<MyServiceIf> iface) :
     iface_(iface) {
-    processMap_["rpc_find_successor2"] = &MyServiceProcessor::process_rpc_find_successor2;
+    processMap_["rpc_find_successor"] = &MyServiceProcessor::process_rpc_find_successor;
     processMap_["rpc_give_local_successor"] = &MyServiceProcessor::process_rpc_give_local_successor;
+    processMap_["find_predecessor"] = &MyServiceProcessor::process_find_predecessor;
   }
 
   virtual bool process(boost::shared_ptr<apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr<apache::thrift::protocol::TProtocol> poprot, void* callContext);
@@ -331,14 +448,14 @@ class MyServiceMultiface : virtual public MyServiceIf {
     ifaces_.push_back(iface);
   }
  public:
-  void rpc_find_successor2(suc_data& _return, const int32_t key) {
+  void rpc_find_successor(suc_data& _return, const int32_t key) {
     size_t sz = ifaces_.size();
     for (size_t i = 0; i < sz; ++i) {
       if (i == sz - 1) {
-        ifaces_[i]->rpc_find_successor2(_return, key);
+        ifaces_[i]->rpc_find_successor(_return, key);
         return;
       } else {
-        ifaces_[i]->rpc_find_successor2(_return, key);
+        ifaces_[i]->rpc_find_successor(_return, key);
       }
     }
   }
@@ -351,6 +468,18 @@ class MyServiceMultiface : virtual public MyServiceIf {
         return;
       } else {
         ifaces_[i]->rpc_give_local_successor(_return);
+      }
+    }
+  }
+
+  void find_predecessor(suc_data& _return, const int32_t key) {
+    size_t sz = ifaces_.size();
+    for (size_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->find_predecessor(_return, key);
+        return;
+      } else {
+        ifaces_[i]->find_predecessor(_return, key);
       }
     }
   }

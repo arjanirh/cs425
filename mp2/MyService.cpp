@@ -8,7 +8,7 @@
 
 namespace mp2 {
 
-uint32_t MyService_rpc_find_successor2_args::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t MyService_rpc_find_successor_args::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -48,9 +48,9 @@ uint32_t MyService_rpc_find_successor2_args::read(::apache::thrift::protocol::TP
   return xfer;
 }
 
-uint32_t MyService_rpc_find_successor2_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t MyService_rpc_find_successor_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("MyService_rpc_find_successor2_args");
+  xfer += oprot->writeStructBegin("MyService_rpc_find_successor_args");
   xfer += oprot->writeFieldBegin("key", ::apache::thrift::protocol::T_I32, 1);
   xfer += oprot->writeI32(this->key);
   xfer += oprot->writeFieldEnd();
@@ -59,9 +59,9 @@ uint32_t MyService_rpc_find_successor2_args::write(::apache::thrift::protocol::T
   return xfer;
 }
 
-uint32_t MyService_rpc_find_successor2_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t MyService_rpc_find_successor_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
-  xfer += oprot->writeStructBegin("MyService_rpc_find_successor2_pargs");
+  xfer += oprot->writeStructBegin("MyService_rpc_find_successor_pargs");
   xfer += oprot->writeFieldBegin("key", ::apache::thrift::protocol::T_I32, 1);
   xfer += oprot->writeI32((*(this->key)));
   xfer += oprot->writeFieldEnd();
@@ -70,7 +70,7 @@ uint32_t MyService_rpc_find_successor2_pargs::write(::apache::thrift::protocol::
   return xfer;
 }
 
-uint32_t MyService_rpc_find_successor2_result::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t MyService_rpc_find_successor_result::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -110,11 +110,11 @@ uint32_t MyService_rpc_find_successor2_result::read(::apache::thrift::protocol::
   return xfer;
 }
 
-uint32_t MyService_rpc_find_successor2_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t MyService_rpc_find_successor_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
 
   uint32_t xfer = 0;
 
-  xfer += oprot->writeStructBegin("MyService_rpc_find_successor2_result");
+  xfer += oprot->writeStructBegin("MyService_rpc_find_successor_result");
 
   if (this->__isset.success) {
     xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_STRUCT, 0);
@@ -126,7 +126,7 @@ uint32_t MyService_rpc_find_successor2_result::write(::apache::thrift::protocol:
   return xfer;
 }
 
-uint32_t MyService_rpc_find_successor2_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t MyService_rpc_find_successor_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   uint32_t xfer = 0;
   std::string fname;
@@ -310,18 +310,176 @@ uint32_t MyService_rpc_give_local_successor_presult::read(::apache::thrift::prot
   return xfer;
 }
 
-void MyServiceClient::rpc_find_successor2(suc_data& _return, const int32_t key)
-{
-  send_rpc_find_successor2(key);
-  recv_rpc_find_successor2(_return);
+uint32_t MyService_find_predecessor_args::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 1:
+        if (ftype == ::apache::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->key);
+          this->__isset.key = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
 }
 
-void MyServiceClient::send_rpc_find_successor2(const int32_t key)
+uint32_t MyService_find_predecessor_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("MyService_find_predecessor_args");
+  xfer += oprot->writeFieldBegin("key", ::apache::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32(this->key);
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t MyService_find_predecessor_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  uint32_t xfer = 0;
+  xfer += oprot->writeStructBegin("MyService_find_predecessor_pargs");
+  xfer += oprot->writeFieldBegin("key", ::apache::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32((*(this->key)));
+  xfer += oprot->writeFieldEnd();
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t MyService_find_predecessor_result::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 0:
+        if (ftype == ::apache::thrift::protocol::T_STRUCT) {
+          xfer += this->success.read(iprot);
+          this->__isset.success = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
+uint32_t MyService_find_predecessor_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
+
+  uint32_t xfer = 0;
+
+  xfer += oprot->writeStructBegin("MyService_find_predecessor_result");
+
+  if (this->__isset.success) {
+    xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_STRUCT, 0);
+    xfer += this->success.write(oprot);
+    xfer += oprot->writeFieldEnd();
+  }
+  xfer += oprot->writeFieldStop();
+  xfer += oprot->writeStructEnd();
+  return xfer;
+}
+
+uint32_t MyService_find_predecessor_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
+
+  uint32_t xfer = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TType ftype;
+  int16_t fid;
+
+  xfer += iprot->readStructBegin(fname);
+
+  using ::apache::thrift::protocol::TProtocolException;
+
+
+  while (true)
+  {
+    xfer += iprot->readFieldBegin(fname, ftype, fid);
+    if (ftype == ::apache::thrift::protocol::T_STOP) {
+      break;
+    }
+    switch (fid)
+    {
+      case 0:
+        if (ftype == ::apache::thrift::protocol::T_STRUCT) {
+          xfer += (*(this->success)).read(iprot);
+          this->__isset.success = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
+    xfer += iprot->readFieldEnd();
+  }
+
+  xfer += iprot->readStructEnd();
+
+  return xfer;
+}
+
+void MyServiceClient::rpc_find_successor(suc_data& _return, const int32_t key)
+{
+  send_rpc_find_successor(key);
+  recv_rpc_find_successor(_return);
+}
+
+void MyServiceClient::send_rpc_find_successor(const int32_t key)
 {
   int32_t cseqid = 0;
-  oprot_->writeMessageBegin("rpc_find_successor2", ::apache::thrift::protocol::T_CALL, cseqid);
+  oprot_->writeMessageBegin("rpc_find_successor", ::apache::thrift::protocol::T_CALL, cseqid);
 
-  MyService_rpc_find_successor2_pargs args;
+  MyService_rpc_find_successor_pargs args;
   args.key = &key;
   args.write(oprot_);
 
@@ -330,7 +488,7 @@ void MyServiceClient::send_rpc_find_successor2(const int32_t key)
   oprot_->getTransport()->flush();
 }
 
-void MyServiceClient::recv_rpc_find_successor2(suc_data& _return)
+void MyServiceClient::recv_rpc_find_successor(suc_data& _return)
 {
 
   int32_t rseqid = 0;
@@ -350,12 +508,12 @@ void MyServiceClient::recv_rpc_find_successor2(suc_data& _return)
     iprot_->readMessageEnd();
     iprot_->getTransport()->readEnd();
   }
-  if (fname.compare("rpc_find_successor2") != 0) {
+  if (fname.compare("rpc_find_successor") != 0) {
     iprot_->skip(::apache::thrift::protocol::T_STRUCT);
     iprot_->readMessageEnd();
     iprot_->getTransport()->readEnd();
   }
-  MyService_rpc_find_successor2_presult result;
+  MyService_rpc_find_successor_presult result;
   result.success = &_return;
   result.read(iprot_);
   iprot_->readMessageEnd();
@@ -365,7 +523,7 @@ void MyServiceClient::recv_rpc_find_successor2(suc_data& _return)
     // _return pointer has now been filled
     return;
   }
-  throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "rpc_find_successor2 failed: unknown result");
+  throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "rpc_find_successor failed: unknown result");
 }
 
 void MyServiceClient::rpc_give_local_successor(suc_data& _return)
@@ -425,6 +583,64 @@ void MyServiceClient::recv_rpc_give_local_successor(suc_data& _return)
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "rpc_give_local_successor failed: unknown result");
 }
 
+void MyServiceClient::find_predecessor(suc_data& _return, const int32_t key)
+{
+  send_find_predecessor(key);
+  recv_find_predecessor(_return);
+}
+
+void MyServiceClient::send_find_predecessor(const int32_t key)
+{
+  int32_t cseqid = 0;
+  oprot_->writeMessageBegin("find_predecessor", ::apache::thrift::protocol::T_CALL, cseqid);
+
+  MyService_find_predecessor_pargs args;
+  args.key = &key;
+  args.write(oprot_);
+
+  oprot_->writeMessageEnd();
+  oprot_->getTransport()->writeEnd();
+  oprot_->getTransport()->flush();
+}
+
+void MyServiceClient::recv_find_predecessor(suc_data& _return)
+{
+
+  int32_t rseqid = 0;
+  std::string fname;
+  ::apache::thrift::protocol::TMessageType mtype;
+
+  iprot_->readMessageBegin(fname, mtype, rseqid);
+  if (mtype == ::apache::thrift::protocol::T_EXCEPTION) {
+    ::apache::thrift::TApplicationException x;
+    x.read(iprot_);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+    throw x;
+  }
+  if (mtype != ::apache::thrift::protocol::T_REPLY) {
+    iprot_->skip(::apache::thrift::protocol::T_STRUCT);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+  }
+  if (fname.compare("find_predecessor") != 0) {
+    iprot_->skip(::apache::thrift::protocol::T_STRUCT);
+    iprot_->readMessageEnd();
+    iprot_->getTransport()->readEnd();
+  }
+  MyService_find_predecessor_presult result;
+  result.success = &_return;
+  result.read(iprot_);
+  iprot_->readMessageEnd();
+  iprot_->getTransport()->readEnd();
+
+  if (result.__isset.success) {
+    // _return pointer has now been filled
+    return;
+  }
+  throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "find_predecessor failed: unknown result");
+}
+
 bool MyServiceProcessor::process(boost::shared_ptr<apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr<apache::thrift::protocol::TProtocol> poprot, void* callContext) {
 
   ::apache::thrift::protocol::TProtocol* iprot = piprot.get();
@@ -470,38 +686,38 @@ bool MyServiceProcessor::process_fn(apache::thrift::protocol::TProtocol* iprot, 
   return true;
 }
 
-void MyServiceProcessor::process_rpc_find_successor2(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext)
+void MyServiceProcessor::process_rpc_find_successor(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext)
 {
   void* ctx = NULL;
   if (this->eventHandler_.get() != NULL) {
-    ctx = this->eventHandler_->getContext("MyService.rpc_find_successor2", callContext);
+    ctx = this->eventHandler_->getContext("MyService.rpc_find_successor", callContext);
   }
-  apache::thrift::TProcessorContextFreer freer(this->eventHandler_.get(), ctx, "MyService.rpc_find_successor2");
+  apache::thrift::TProcessorContextFreer freer(this->eventHandler_.get(), ctx, "MyService.rpc_find_successor");
 
   if (this->eventHandler_.get() != NULL) {
-    this->eventHandler_->preRead(ctx, "MyService.rpc_find_successor2");
+    this->eventHandler_->preRead(ctx, "MyService.rpc_find_successor");
   }
 
-  MyService_rpc_find_successor2_args args;
+  MyService_rpc_find_successor_args args;
   args.read(iprot);
   iprot->readMessageEnd();
   uint32_t bytes = iprot->getTransport()->readEnd();
 
   if (this->eventHandler_.get() != NULL) {
-    this->eventHandler_->postRead(ctx, "MyService.rpc_find_successor2", bytes);
+    this->eventHandler_->postRead(ctx, "MyService.rpc_find_successor", bytes);
   }
 
-  MyService_rpc_find_successor2_result result;
+  MyService_rpc_find_successor_result result;
   try {
-    iface_->rpc_find_successor2(result.success, args.key);
+    iface_->rpc_find_successor(result.success, args.key);
     result.__isset.success = true;
   } catch (const std::exception& e) {
     if (this->eventHandler_.get() != NULL) {
-      this->eventHandler_->handlerError(ctx, "MyService.rpc_find_successor2");
+      this->eventHandler_->handlerError(ctx, "MyService.rpc_find_successor");
     }
 
     apache::thrift::TApplicationException x(e.what());
-    oprot->writeMessageBegin("rpc_find_successor2", apache::thrift::protocol::T_EXCEPTION, seqid);
+    oprot->writeMessageBegin("rpc_find_successor", apache::thrift::protocol::T_EXCEPTION, seqid);
     x.write(oprot);
     oprot->writeMessageEnd();
     oprot->getTransport()->writeEnd();
@@ -510,17 +726,17 @@ void MyServiceProcessor::process_rpc_find_successor2(int32_t seqid, ::apache::th
   }
 
   if (this->eventHandler_.get() != NULL) {
-    this->eventHandler_->preWrite(ctx, "MyService.rpc_find_successor2");
+    this->eventHandler_->preWrite(ctx, "MyService.rpc_find_successor");
   }
 
-  oprot->writeMessageBegin("rpc_find_successor2", apache::thrift::protocol::T_REPLY, seqid);
+  oprot->writeMessageBegin("rpc_find_successor", apache::thrift::protocol::T_REPLY, seqid);
   result.write(oprot);
   oprot->writeMessageEnd();
   bytes = oprot->getTransport()->writeEnd();
   oprot->getTransport()->flush();
 
   if (this->eventHandler_.get() != NULL) {
-    this->eventHandler_->postWrite(ctx, "MyService.rpc_find_successor2", bytes);
+    this->eventHandler_->postWrite(ctx, "MyService.rpc_find_successor", bytes);
   }
 }
 
@@ -575,6 +791,60 @@ void MyServiceProcessor::process_rpc_give_local_successor(int32_t seqid, ::apach
 
   if (this->eventHandler_.get() != NULL) {
     this->eventHandler_->postWrite(ctx, "MyService.rpc_give_local_successor", bytes);
+  }
+}
+
+void MyServiceProcessor::process_find_predecessor(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext)
+{
+  void* ctx = NULL;
+  if (this->eventHandler_.get() != NULL) {
+    ctx = this->eventHandler_->getContext("MyService.find_predecessor", callContext);
+  }
+  apache::thrift::TProcessorContextFreer freer(this->eventHandler_.get(), ctx, "MyService.find_predecessor");
+
+  if (this->eventHandler_.get() != NULL) {
+    this->eventHandler_->preRead(ctx, "MyService.find_predecessor");
+  }
+
+  MyService_find_predecessor_args args;
+  args.read(iprot);
+  iprot->readMessageEnd();
+  uint32_t bytes = iprot->getTransport()->readEnd();
+
+  if (this->eventHandler_.get() != NULL) {
+    this->eventHandler_->postRead(ctx, "MyService.find_predecessor", bytes);
+  }
+
+  MyService_find_predecessor_result result;
+  try {
+    iface_->find_predecessor(result.success, args.key);
+    result.__isset.success = true;
+  } catch (const std::exception& e) {
+    if (this->eventHandler_.get() != NULL) {
+      this->eventHandler_->handlerError(ctx, "MyService.find_predecessor");
+    }
+
+    apache::thrift::TApplicationException x(e.what());
+    oprot->writeMessageBegin("find_predecessor", apache::thrift::protocol::T_EXCEPTION, seqid);
+    x.write(oprot);
+    oprot->writeMessageEnd();
+    oprot->getTransport()->writeEnd();
+    oprot->getTransport()->flush();
+    return;
+  }
+
+  if (this->eventHandler_.get() != NULL) {
+    this->eventHandler_->preWrite(ctx, "MyService.find_predecessor");
+  }
+
+  oprot->writeMessageBegin("find_predecessor", apache::thrift::protocol::T_REPLY, seqid);
+  result.write(oprot);
+  oprot->writeMessageEnd();
+  bytes = oprot->getTransport()->writeEnd();
+  oprot->getTransport()->flush();
+
+  if (this->eventHandler_.get() != NULL) {
+    this->eventHandler_->postWrite(ctx, "MyService.find_predecessor", bytes);
   }
 }
 

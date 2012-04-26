@@ -12,10 +12,10 @@
 
 using namespace std;
 
-struct ftable_entry{
+struct node_info{
 
-	long id;
-	long port;
+	int id;
+	int port;
 };
 
 struct file_info{
@@ -28,9 +28,9 @@ struct file_info{
 string get_ADD_FILE_result_as_string(const char *fname, const int32_t key, const int32_t nodeId);
 string get_DEL_FILE_result_as_string(const char *fname, const int32_t key, const bool deleted, const int32_t nodeId);
 string get_GET_FILE_result_as_string(const char *fname,const int32_t key,const bool found,const int32_t nodeId,const char *fdata);
-string get_GET_TABLE_result_as_string(const vector<ftable_entry>& finger_table,const uint32_t m,const uint32_t myid,
+string get_GET_TABLE_result_as_string(const vector<node_info>& finger_table,const uint32_t m,const uint32_t myid,
 											const uint32_t idx_of_entry1,const std::map<int32_t, file_info>& keys_table);
-string get_finger_table_as_string(const std::vector<ftable_entry>& table,const uint32_t m,const uint32_t myid, const uint32_t idx_of_entry1);
+string get_finger_table_as_string(const std::vector<node_info>& table,const uint32_t m,const uint32_t myid, const uint32_t idx_of_entry1);
 string get_keys_table_as_string(const std::map<int32_t, file_info>& table);
 void check_usage(int);
 void parse_args(int argc, char **argv);
@@ -60,11 +60,11 @@ int seed = -1;
 const char *logconffile = NULL;
  
 // My Successor and my predecessor
-struct suc_data my_suc = { 0, port};
-struct suc_data my_pre = {-1, -1};
+struct node_info my_suc = { 0, port};
+struct node_info my_pre = {-1, -1};
 
 //finger table: a vector of <(id, port)>
-vector<ftable_entry> ftable;
+vector<node_info> ftable;
 
 //key table: a map
 map<int32_t, file_info> key_table; 
@@ -174,7 +174,7 @@ void setup_finger_table(){
 
 	//if introducer then always copy myself m times into ftable
 	if(id==0){
-		struct ftable_entry entry= { id, port };
+		struct node_info entry= { id, port };
 
 		for(int i=0;i<m; i++){
 			ftable.push_back(entry);
@@ -448,7 +448,7 @@ keys table:
     *
     */
     string get_GET_TABLE_result_as_string(
-        const vector<ftable_entry>& finger_table,
+        const vector<node_info>& finger_table,
         const uint32_t m,
         const uint32_t myid,
         const uint32_t idx_of_entry1,
@@ -474,7 +474,7 @@ keys table:
  */
 
 std::string
-get_finger_table_as_string(const std::vector<ftable_entry>& table,
+get_finger_table_as_string(const std::vector<node_info>& table,
                            const uint32_t m,
                            const uint32_t myid,
                            const uint32_t idx_of_entry1)

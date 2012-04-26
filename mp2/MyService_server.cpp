@@ -22,57 +22,78 @@ class MyServiceHandler : virtual public MyServiceIf {
     // Your initialization goes here
   }
 
-  void rpc_find_successor2(suc_data& _return, const int32_t key) {
+  void rpc_find_successor(suc_data& _return, const int32_t key) {
     // Your implementation goes here
-    printf("rpc_find_successor2\n");
+    printf("rpc_find_successor\n");
+	if(id == my_suc.id){
+		_return my_suc;
+		return;
+	}
 
 	//Check if key is between myid and my_suc
-	if(key>id && key<= my_suc.id){
+	//inflate successor
+	int inflated_suc_id = my_suc.id;
+	if(my_suc.id ==0){
+		inflated_suc_id = pow(2,m);
+	}
+		
+	if(key>id && key<= inflated_suc_id){
 		_return = my_suc;
 		return;
 	}
 	else{
 	//ask closest predecessor - go through finger table and 
 		//int closest_pre = ftable[ftable.size()-1].id;
-		int pre_port;
-		for(int i=ftable.size()-1; i>=0; i--){
-			int val = id + (pow(2,i)) % (pow(2,m));
-			if(ftable[i].id !=0 && key>= val){
-				
-				//Found predecessor, now ask it for its successor
-			
-				//Dont ask myself for successor again
-				if(id==ftable[i].id){
-					_return = my_suc;
-					return;
-				}
+		int pre_port = 0;
+		struct node_info target_pre;
+  		find_predecessor(target_pre, key);
 
-				boost::shared_ptr<TSocket> socket(new TSocket("localhost", ftable[i].port));
-				boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-				boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
-				
-				MyServiceClient client(protocol);
-				transport->open();
-				suc_data result;
-				client.rpc_find_successor(result, key);
-				transport->close();
+		//Now connect to predecessor and ask for its successor
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", ftable[i].port));
+		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+		
+		MyServiceClient client(protocol);
+		transport->open();
+		suc_data result;
+		client.rpc_find_successor(result, key);
+		transport->close();
 			
-				_return = result;
-				return;
-			}
+		_return = result;
+		return;
 		}
 		//if not found
 		_return = my_suc;
 		return;
 	}
-
   }
 
   void rpc_give_local_successor(suc_data& _return) {
     // Your implementation goes here
     printf("rpc_give_local_successor\n");
-
 	_return = my_suc;
+  }
+
+  void find_predecessor(suc_data& _return, const int32_t key) {
+
+	int inflated_key = key;
+	if(key<id){		//Tke care of wrap arounds
+		inflated_key = key + pow(2,m);
+	}
+	//
+	//Go through finger table and find predecessor
+	for(int i=m-1;i>=0;i--){
+
+		int inflated_ftable_id = ftable[i].id;
+		if(ftable[i].id < id){
+			inflated_ftable_id = ftable[i].id + pow(2,m);
+		}
+
+		if((inflated_key >= inflated_ftable_id) && (inflated_ftable_id > id)){
+			_return = ftable[i];
+			return;
+		}
+	}
   }
 
 };

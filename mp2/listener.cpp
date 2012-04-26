@@ -4,10 +4,10 @@
 
 using namespace std;
 
-struct ftable_entry{
+struct node_info{
 
-	long id;
-	long port;
+	int id;
+	int port;
 };
 
 int main(){

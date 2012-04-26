@@ -1,6 +1,6 @@
 namespace cpp mp2
 
-struct suc_data{
+struct node_info{
 	1: i32 id;
 	2: i32 port;
 }
@@ -9,9 +9,12 @@ struct suc_data{
 service MyService {
 
 	//Other node asked me to find successor for 'key'
-	suc_data rpc_find_successor2(1:i32 key);
+	node_info rpc_find_successor(1:i32 key);
 
 	//Other node asked for my own successor
-	suc_data rpc_give_local_successor();
+	node_info rpc_give_local_successor();
+
+	//helper function for finding closest predecessor
+	node_info find_predecessor(1:i32 key);
 
 }
