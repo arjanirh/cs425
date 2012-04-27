@@ -295,7 +295,7 @@ class MyServiceHandler : virtual public MyServiceIf {
 };
 
 int main(int argc, char **argv) {
-  int port = 9090;
+  //int port = 9090;
   shared_ptr<MyServiceHandler> handler(new MyServiceHandler());
   shared_ptr<TProcessor> processor(new MyServiceProcessor(handler));
   shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
@@ -304,8 +304,6 @@ int main(int argc, char **argv) {
 
   TSimpleServer server(processor, serverTransport, transportFactory, protocolFactory);
   server.serve();
-
-
 
     //INIT_LOCAL_LOGGER();
 	
@@ -325,10 +323,21 @@ int main(int argc, char **argv) {
 	setup_stabilize_thread();			//FIX keys also
 	setup_fixfinger_thread();
 
-
-
-
   return 0;
+}
+
+void connect_to_port(int port_to_connect_to){
+
+	boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
+	boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+	boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+
+	MyServiceClient client(protocol);
+    transport->open();
+	map<int_32, file_info> newmap;
+	client.rpc_transfer_keys(newmap, id);
+	transport->close();
+
 }
 
 //ASK suc for keys that belong to me.
@@ -336,7 +345,15 @@ int main(int argc, char **argv) {
 void fixKeys(){
 
 	//Connect to suc.port
-	map<int_32, file_info> newmap = rpc_transfer_keys(id);
+	boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
+	boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+	boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+
+	MyServiceClient client(protocol);
+    transport->open();
+	map<int_32, file_info> newmap;
+	client.rpc_transfer_keys(newmap, id);
+	transport->close();
 
 	//Now add the newly recd keys to my map
 	map<int_32, file_info>::iterator it;
@@ -351,7 +368,15 @@ void *stabilize(){
 	while(1){
 		//Connect to suc.port
 		
-		struct node_info recd_pre = rpc_return_predecessor();
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
+		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+	
+		MyServiceClient client(protocol);
+   		transport->open();
+		struct node_info recd_pre;
+		client.rpc_return_predecessor(recd_pre);
+		transport->close();
 		
 		int inflated_suc_id = my_suc.id;
 		if(my_suc.id == 0)
@@ -362,9 +387,16 @@ void *stabilize(){
 	
 		//Now notify successor that i am your pred
 		//Connect to suc.port --NEED THIS AGAIN because suc might have changed in the if case
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
+		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+	
+		MyServiceClient client(protocol);
+	    transport->open();
 		struct node_info my_node_info = {id, port};
-		rpc_notify_of_predecessor(my_node_info);
-
+		client.rpc_notify_of_predecessor(my_node_info);
+		transport->close();
+	
 		fixKeys();
 		//Sleep for an interval
 		sleep(stabilizeInterval);
@@ -394,7 +426,6 @@ void *fix_fingers(){
 void setup_fixfinger_thread(){
 
 	pthread_create(&fixfinger_thread, NULL, fix_fingers, NULL);	
-
 }
 
 /*
@@ -412,10 +443,14 @@ void setup_successor(){
 	}
 	else{
 		//Ask id0 to find my suc
-		
-		//Connect to id0 port
-		//Add thrift code here
-		my_suc = rpc_find_successor(id);		
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", introducerPort));
+		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+	
+		MyServiceClient client(protocol);
+	    transport->open();
+		client.rpc_find_successor(my_suc, id);
+		transport->close();
 	}
 
 }
@@ -432,10 +467,14 @@ void setup_finger_table(){
 		}
 	}
 	else{
-		//TODO:Copy over successor's ftable
-
-		//Thrift: connect to my_suc.port
-		ftable = rpc_return_finger_table();
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
+		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+	
+		MyServiceClient client(protocol);
+	    transport->open();
+		client.rpc_return_finger_table(ftable);
+		transport->close();
 		
 	}
 }
@@ -444,12 +483,17 @@ void setup_key_table(){
 
 	if(id==0){
 		//ignore
+		return;
 	}
 	else{
-		//TODO: copy from successor
-
-		//Thrift: connect to my_suc.port
-		key_table = rpc_return_key_table();
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
+		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+	
+		MyServiceClient client(protocol);
+	    transport->open();
+		client.rpc_return_key_table(key_table);
+		transport->close();
 	}
 
 }
