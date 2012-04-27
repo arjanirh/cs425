@@ -22,6 +22,11 @@ class MyServiceIf {
   virtual void rpc_return_key_table(std::map<int32_t, file_info> & _return) = 0;
   virtual void rpc_return_predecessor(node_info& _return) = 0;
   virtual void rpc_notify_of_predecessor(const node_info& new_pre) = 0;
+  virtual void rpc_transfer_keys(std::map<int32_t, file_info> & _return, const int32_t key) = 0;
+  virtual void rpc_add_file(std::string& _return, const std::string& filename, const std::string& data, const int32_t key) = 0;
+  virtual void rpc_del_file(std::string& _return, const std::string& filename, const int32_t key) = 0;
+  virtual void rpc_get_file(std::string& _return, const std::string& filename, const int32_t key) = 0;
+  virtual void rpc_get_table(std::string& _return, const int32_t key) = 0;
 };
 
 class MyServiceIfFactory {
@@ -70,6 +75,21 @@ class MyServiceNull : virtual public MyServiceIf {
     return;
   }
   void rpc_notify_of_predecessor(const node_info& /* new_pre */) {
+    return;
+  }
+  void rpc_transfer_keys(std::map<int32_t, file_info> & /* _return */, const int32_t /* key */) {
+    return;
+  }
+  void rpc_add_file(std::string& /* _return */, const std::string& /* filename */, const std::string& /* data */, const int32_t /* key */) {
+    return;
+  }
+  void rpc_del_file(std::string& /* _return */, const std::string& /* filename */, const int32_t /* key */) {
+    return;
+  }
+  void rpc_get_file(std::string& /* _return */, const std::string& /* filename */, const int32_t /* key */) {
+    return;
+  }
+  void rpc_get_table(std::string& /* _return */, const int32_t /* key */) {
     return;
   }
 };
@@ -754,6 +774,582 @@ class MyService_rpc_notify_of_predecessor_presult {
 
 };
 
+typedef struct _MyService_rpc_transfer_keys_args__isset {
+  _MyService_rpc_transfer_keys_args__isset() : key(false) {}
+  bool key;
+} _MyService_rpc_transfer_keys_args__isset;
+
+class MyService_rpc_transfer_keys_args {
+ public:
+
+  MyService_rpc_transfer_keys_args() : key(0) {
+  }
+
+  virtual ~MyService_rpc_transfer_keys_args() throw() {}
+
+  int32_t key;
+
+  _MyService_rpc_transfer_keys_args__isset __isset;
+
+  void __set_key(const int32_t val) {
+    key = val;
+  }
+
+  bool operator == (const MyService_rpc_transfer_keys_args & rhs) const
+  {
+    if (!(key == rhs.key))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_transfer_keys_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_transfer_keys_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class MyService_rpc_transfer_keys_pargs {
+ public:
+
+
+  virtual ~MyService_rpc_transfer_keys_pargs() throw() {}
+
+  const int32_t* key;
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_transfer_keys_result__isset {
+  _MyService_rpc_transfer_keys_result__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_transfer_keys_result__isset;
+
+class MyService_rpc_transfer_keys_result {
+ public:
+
+  MyService_rpc_transfer_keys_result() {
+  }
+
+  virtual ~MyService_rpc_transfer_keys_result() throw() {}
+
+  std::map<int32_t, file_info>  success;
+
+  _MyService_rpc_transfer_keys_result__isset __isset;
+
+  void __set_success(const std::map<int32_t, file_info> & val) {
+    success = val;
+  }
+
+  bool operator == (const MyService_rpc_transfer_keys_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_transfer_keys_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_transfer_keys_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_transfer_keys_presult__isset {
+  _MyService_rpc_transfer_keys_presult__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_transfer_keys_presult__isset;
+
+class MyService_rpc_transfer_keys_presult {
+ public:
+
+
+  virtual ~MyService_rpc_transfer_keys_presult() throw() {}
+
+  std::map<int32_t, file_info> * success;
+
+  _MyService_rpc_transfer_keys_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+typedef struct _MyService_rpc_add_file_args__isset {
+  _MyService_rpc_add_file_args__isset() : filename(false), data(false), key(false) {}
+  bool filename;
+  bool data;
+  bool key;
+} _MyService_rpc_add_file_args__isset;
+
+class MyService_rpc_add_file_args {
+ public:
+
+  MyService_rpc_add_file_args() : filename(""), data(""), key(0) {
+  }
+
+  virtual ~MyService_rpc_add_file_args() throw() {}
+
+  std::string filename;
+  std::string data;
+  int32_t key;
+
+  _MyService_rpc_add_file_args__isset __isset;
+
+  void __set_filename(const std::string& val) {
+    filename = val;
+  }
+
+  void __set_data(const std::string& val) {
+    data = val;
+  }
+
+  void __set_key(const int32_t val) {
+    key = val;
+  }
+
+  bool operator == (const MyService_rpc_add_file_args & rhs) const
+  {
+    if (!(filename == rhs.filename))
+      return false;
+    if (!(data == rhs.data))
+      return false;
+    if (!(key == rhs.key))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_add_file_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_add_file_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class MyService_rpc_add_file_pargs {
+ public:
+
+
+  virtual ~MyService_rpc_add_file_pargs() throw() {}
+
+  const std::string* filename;
+  const std::string* data;
+  const int32_t* key;
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_add_file_result__isset {
+  _MyService_rpc_add_file_result__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_add_file_result__isset;
+
+class MyService_rpc_add_file_result {
+ public:
+
+  MyService_rpc_add_file_result() : success("") {
+  }
+
+  virtual ~MyService_rpc_add_file_result() throw() {}
+
+  std::string success;
+
+  _MyService_rpc_add_file_result__isset __isset;
+
+  void __set_success(const std::string& val) {
+    success = val;
+  }
+
+  bool operator == (const MyService_rpc_add_file_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_add_file_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_add_file_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_add_file_presult__isset {
+  _MyService_rpc_add_file_presult__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_add_file_presult__isset;
+
+class MyService_rpc_add_file_presult {
+ public:
+
+
+  virtual ~MyService_rpc_add_file_presult() throw() {}
+
+  std::string* success;
+
+  _MyService_rpc_add_file_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+typedef struct _MyService_rpc_del_file_args__isset {
+  _MyService_rpc_del_file_args__isset() : filename(false), key(false) {}
+  bool filename;
+  bool key;
+} _MyService_rpc_del_file_args__isset;
+
+class MyService_rpc_del_file_args {
+ public:
+
+  MyService_rpc_del_file_args() : filename(""), key(0) {
+  }
+
+  virtual ~MyService_rpc_del_file_args() throw() {}
+
+  std::string filename;
+  int32_t key;
+
+  _MyService_rpc_del_file_args__isset __isset;
+
+  void __set_filename(const std::string& val) {
+    filename = val;
+  }
+
+  void __set_key(const int32_t val) {
+    key = val;
+  }
+
+  bool operator == (const MyService_rpc_del_file_args & rhs) const
+  {
+    if (!(filename == rhs.filename))
+      return false;
+    if (!(key == rhs.key))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_del_file_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_del_file_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class MyService_rpc_del_file_pargs {
+ public:
+
+
+  virtual ~MyService_rpc_del_file_pargs() throw() {}
+
+  const std::string* filename;
+  const int32_t* key;
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_del_file_result__isset {
+  _MyService_rpc_del_file_result__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_del_file_result__isset;
+
+class MyService_rpc_del_file_result {
+ public:
+
+  MyService_rpc_del_file_result() : success("") {
+  }
+
+  virtual ~MyService_rpc_del_file_result() throw() {}
+
+  std::string success;
+
+  _MyService_rpc_del_file_result__isset __isset;
+
+  void __set_success(const std::string& val) {
+    success = val;
+  }
+
+  bool operator == (const MyService_rpc_del_file_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_del_file_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_del_file_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_del_file_presult__isset {
+  _MyService_rpc_del_file_presult__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_del_file_presult__isset;
+
+class MyService_rpc_del_file_presult {
+ public:
+
+
+  virtual ~MyService_rpc_del_file_presult() throw() {}
+
+  std::string* success;
+
+  _MyService_rpc_del_file_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+typedef struct _MyService_rpc_get_file_args__isset {
+  _MyService_rpc_get_file_args__isset() : filename(false), key(false) {}
+  bool filename;
+  bool key;
+} _MyService_rpc_get_file_args__isset;
+
+class MyService_rpc_get_file_args {
+ public:
+
+  MyService_rpc_get_file_args() : filename(""), key(0) {
+  }
+
+  virtual ~MyService_rpc_get_file_args() throw() {}
+
+  std::string filename;
+  int32_t key;
+
+  _MyService_rpc_get_file_args__isset __isset;
+
+  void __set_filename(const std::string& val) {
+    filename = val;
+  }
+
+  void __set_key(const int32_t val) {
+    key = val;
+  }
+
+  bool operator == (const MyService_rpc_get_file_args & rhs) const
+  {
+    if (!(filename == rhs.filename))
+      return false;
+    if (!(key == rhs.key))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_get_file_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_get_file_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class MyService_rpc_get_file_pargs {
+ public:
+
+
+  virtual ~MyService_rpc_get_file_pargs() throw() {}
+
+  const std::string* filename;
+  const int32_t* key;
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_get_file_result__isset {
+  _MyService_rpc_get_file_result__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_get_file_result__isset;
+
+class MyService_rpc_get_file_result {
+ public:
+
+  MyService_rpc_get_file_result() : success("") {
+  }
+
+  virtual ~MyService_rpc_get_file_result() throw() {}
+
+  std::string success;
+
+  _MyService_rpc_get_file_result__isset __isset;
+
+  void __set_success(const std::string& val) {
+    success = val;
+  }
+
+  bool operator == (const MyService_rpc_get_file_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_get_file_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_get_file_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_get_file_presult__isset {
+  _MyService_rpc_get_file_presult__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_get_file_presult__isset;
+
+class MyService_rpc_get_file_presult {
+ public:
+
+
+  virtual ~MyService_rpc_get_file_presult() throw() {}
+
+  std::string* success;
+
+  _MyService_rpc_get_file_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+typedef struct _MyService_rpc_get_table_args__isset {
+  _MyService_rpc_get_table_args__isset() : key(false) {}
+  bool key;
+} _MyService_rpc_get_table_args__isset;
+
+class MyService_rpc_get_table_args {
+ public:
+
+  MyService_rpc_get_table_args() : key(0) {
+  }
+
+  virtual ~MyService_rpc_get_table_args() throw() {}
+
+  int32_t key;
+
+  _MyService_rpc_get_table_args__isset __isset;
+
+  void __set_key(const int32_t val) {
+    key = val;
+  }
+
+  bool operator == (const MyService_rpc_get_table_args & rhs) const
+  {
+    if (!(key == rhs.key))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_get_table_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_get_table_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class MyService_rpc_get_table_pargs {
+ public:
+
+
+  virtual ~MyService_rpc_get_table_pargs() throw() {}
+
+  const int32_t* key;
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_get_table_result__isset {
+  _MyService_rpc_get_table_result__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_get_table_result__isset;
+
+class MyService_rpc_get_table_result {
+ public:
+
+  MyService_rpc_get_table_result() : success("") {
+  }
+
+  virtual ~MyService_rpc_get_table_result() throw() {}
+
+  std::string success;
+
+  _MyService_rpc_get_table_result__isset __isset;
+
+  void __set_success(const std::string& val) {
+    success = val;
+  }
+
+  bool operator == (const MyService_rpc_get_table_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const MyService_rpc_get_table_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MyService_rpc_get_table_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _MyService_rpc_get_table_presult__isset {
+  _MyService_rpc_get_table_presult__isset() : success(false) {}
+  bool success;
+} _MyService_rpc_get_table_presult__isset;
+
+class MyService_rpc_get_table_presult {
+ public:
+
+
+  virtual ~MyService_rpc_get_table_presult() throw() {}
+
+  std::string* success;
+
+  _MyService_rpc_get_table_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
 class MyServiceClient : virtual public MyServiceIf {
  public:
   MyServiceClient(boost::shared_ptr< ::apache::thrift::protocol::TProtocol> prot) :
@@ -795,6 +1391,21 @@ class MyServiceClient : virtual public MyServiceIf {
   void rpc_notify_of_predecessor(const node_info& new_pre);
   void send_rpc_notify_of_predecessor(const node_info& new_pre);
   void recv_rpc_notify_of_predecessor();
+  void rpc_transfer_keys(std::map<int32_t, file_info> & _return, const int32_t key);
+  void send_rpc_transfer_keys(const int32_t key);
+  void recv_rpc_transfer_keys(std::map<int32_t, file_info> & _return);
+  void rpc_add_file(std::string& _return, const std::string& filename, const std::string& data, const int32_t key);
+  void send_rpc_add_file(const std::string& filename, const std::string& data, const int32_t key);
+  void recv_rpc_add_file(std::string& _return);
+  void rpc_del_file(std::string& _return, const std::string& filename, const int32_t key);
+  void send_rpc_del_file(const std::string& filename, const int32_t key);
+  void recv_rpc_del_file(std::string& _return);
+  void rpc_get_file(std::string& _return, const std::string& filename, const int32_t key);
+  void send_rpc_get_file(const std::string& filename, const int32_t key);
+  void recv_rpc_get_file(std::string& _return);
+  void rpc_get_table(std::string& _return, const int32_t key);
+  void send_rpc_get_table(const int32_t key);
+  void recv_rpc_get_table(std::string& _return);
  protected:
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> poprot_;
@@ -815,6 +1426,11 @@ class MyServiceProcessor : public ::apache::thrift::TProcessor {
   void process_rpc_return_key_table(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_rpc_return_predecessor(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_rpc_notify_of_predecessor(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_rpc_transfer_keys(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_rpc_add_file(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_rpc_del_file(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_rpc_get_file(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_rpc_get_table(int32_t seqid, apache::thrift::protocol::TProtocol* iprot, apache::thrift::protocol::TProtocol* oprot, void* callContext);
  public:
   MyServiceProcessor(boost::shared_ptr<MyServiceIf> iface) :
     iface_(iface) {
@@ -825,6 +1441,11 @@ class MyServiceProcessor : public ::apache::thrift::TProcessor {
     processMap_["rpc_return_key_table"] = &MyServiceProcessor::process_rpc_return_key_table;
     processMap_["rpc_return_predecessor"] = &MyServiceProcessor::process_rpc_return_predecessor;
     processMap_["rpc_notify_of_predecessor"] = &MyServiceProcessor::process_rpc_notify_of_predecessor;
+    processMap_["rpc_transfer_keys"] = &MyServiceProcessor::process_rpc_transfer_keys;
+    processMap_["rpc_add_file"] = &MyServiceProcessor::process_rpc_add_file;
+    processMap_["rpc_del_file"] = &MyServiceProcessor::process_rpc_del_file;
+    processMap_["rpc_get_file"] = &MyServiceProcessor::process_rpc_get_file;
+    processMap_["rpc_get_table"] = &MyServiceProcessor::process_rpc_get_table;
   }
 
   virtual bool process(boost::shared_ptr<apache::thrift::protocol::TProtocol> piprot, boost::shared_ptr<apache::thrift::protocol::TProtocol> poprot, void* callContext);
@@ -930,6 +1551,66 @@ class MyServiceMultiface : virtual public MyServiceIf {
     size_t sz = ifaces_.size();
     for (size_t i = 0; i < sz; ++i) {
       ifaces_[i]->rpc_notify_of_predecessor(new_pre);
+    }
+  }
+
+  void rpc_transfer_keys(std::map<int32_t, file_info> & _return, const int32_t key) {
+    size_t sz = ifaces_.size();
+    for (size_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->rpc_transfer_keys(_return, key);
+        return;
+      } else {
+        ifaces_[i]->rpc_transfer_keys(_return, key);
+      }
+    }
+  }
+
+  void rpc_add_file(std::string& _return, const std::string& filename, const std::string& data, const int32_t key) {
+    size_t sz = ifaces_.size();
+    for (size_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->rpc_add_file(_return, filename, data, key);
+        return;
+      } else {
+        ifaces_[i]->rpc_add_file(_return, filename, data, key);
+      }
+    }
+  }
+
+  void rpc_del_file(std::string& _return, const std::string& filename, const int32_t key) {
+    size_t sz = ifaces_.size();
+    for (size_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->rpc_del_file(_return, filename, key);
+        return;
+      } else {
+        ifaces_[i]->rpc_del_file(_return, filename, key);
+      }
+    }
+  }
+
+  void rpc_get_file(std::string& _return, const std::string& filename, const int32_t key) {
+    size_t sz = ifaces_.size();
+    for (size_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->rpc_get_file(_return, filename, key);
+        return;
+      } else {
+        ifaces_[i]->rpc_get_file(_return, filename, key);
+      }
+    }
+  }
+
+  void rpc_get_table(std::string& _return, const int32_t key) {
+    size_t sz = ifaces_.size();
+    for (size_t i = 0; i < sz; ++i) {
+      if (i == sz - 1) {
+        ifaces_[i]->rpc_get_table(_return, key);
+        return;
+      } else {
+        ifaces_[i]->rpc_get_table(_return, key);
+      }
     }
   }
 

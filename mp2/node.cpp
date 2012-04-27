@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <map>
 #include <iostream>
+#include <time.h>
 
 using namespace std;
 
@@ -54,8 +55,8 @@ int m = -1;
 int id = -1;
 int port = -1;
 int introducerPort = -1;
-int stabilizeInterval = -1;
-int fixInterval = -1;
+int stabilizeInterval = 1;
+int fixInterval = 1;
 int seed = -1;
 const char *logconffile = NULL;
  
@@ -70,6 +71,7 @@ vector<node_info> ftable;
 map<int32_t, file_info> key_table; 
 
 pthread_t stabilize_thread;
+pthread_t fixfinger_thread;
 
 
 /********************************************************/
@@ -90,7 +92,7 @@ int main(int argc, char **argv) {
 	check_usage(argc);
 	parse_args(argc, argv);
 	make_asserts();
-    //srand(seed);
+
 	// configureLogging(logconffile);     /* if you want to use the log4cxx, uncomment this */
 	
 	//Node Join:
@@ -103,7 +105,6 @@ int main(int argc, char **argv) {
 	setup_stabilize_thread();			//FIX keys also
 	setup_fixfinger_thread();
 
-
 	
 	
 }
@@ -111,6 +112,18 @@ int main(int argc, char **argv) {
 void setup_server(){
 
 
+}
+
+//ASK suc for keys that belong to me.
+// key <=myid
+void fixKeys(){
+
+	//Connect to suc.port
+	map<int_32, file_info> newmap = rpc_transfer_keys(id);
+
+	//Now add the newly recd keys to my map
+	map<int_32, file_info>::iterator it;
+	key_table.insert(newmap.start(), newmap.end());
 }
 
 /*
@@ -135,6 +148,7 @@ void *stabilize(){
 		struct node_info my_node_info = {id, port};
 		rpc_notify_of_predecessor(my_node_info);
 
+		fixKeys();
 		//Sleep for an interval
 		sleep(stabilizeInterval);
 	}
@@ -148,8 +162,21 @@ void setup_stabilize_thread(){
 
 }
 
+//Fix random finger
+void *fix_fingers(){
+
+	while(1){
+		int finger = rand() % m;
+	
+		//Ask myself for finding successor for a particular key
+		ftable[finger].id = rpc_find_successor(id);		
+		sleep(fixInterval);
+	}
+}
+
 void setup_fixfinger_thread(){
 
+	pthread_create(&fixfinger_thread, NULL, fix_fingers, NULL);	
 
 }
 
@@ -254,6 +281,14 @@ void make_asserts(){
     assert((id >= 0) && (id < pow(2,m)));
 
     assert (port > 0);
+
+	//Seed random number generator
+	if(seed == -1){
+		srand(time(NULL));
+	}
+	else{
+		srand(seed);
+	}
 }
 
 void parse_args(int argc, char **argv){

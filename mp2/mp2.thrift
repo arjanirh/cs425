@@ -32,4 +32,13 @@ service MyService {
 
 	void rpc_notify_of_predecessor(1:node_info new_pre);
 
+	map<i32, file_info> rpc_transfer_keys(1:i32 key);
+
+	string rpc_add_file(1:string filename, 2:string data, 3:i32 key);
+
+	string rpc_del_file(1:string filename, 2:i32 key);
+
+	string rpc_get_file(1:string filename, 2:i32 key);
+
+	string rpc_get_table(1:i32 key);
 }
