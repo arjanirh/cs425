@@ -3,13 +3,19 @@
 
 #include "MyService.h"
 #include <protocol/TBinaryProtocol.h>
+
 #include <server/TSimpleServer.h>
+
+#include <transport/TSocket.h>
 #include <transport/TServerSocket.h>
 #include <transport/TBufferTransports.h>
+
 #include <getopt.h>
 #include <stdarg.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <sha1.h>
+#include <math.h>
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
@@ -22,18 +28,18 @@ using namespace  ::mp2;
 
 using namespace std;
 
-struct node_info{
+/*struct node_info{
 
 	int id;
 	int port;
 };
-
-struct file_info{
+*/
+/*struct file_info{
 
 	string name;
 	string data;
 };
-
+*/
 /* Function prototypes */
 string get_ADD_FILE_result_as_string(const char *fname, const int32_t key, const int32_t nodeId);
 string get_DEL_FILE_result_as_string(const char *fname, const int32_t key, const bool deleted, const int32_t nodeId);
@@ -51,6 +57,9 @@ void setup_key_table();
 void setup_listener_thread();
 void setup_stabilize_thread();
 void setup_fixfinger_thread();
+int32_t hash(string fname);
+void init_node_info_structs();
+
 
 /*	Globals */	
 int opt;
@@ -66,8 +75,8 @@ int seed = -1;
 const char *logconffile = NULL;
  
 // My Successor and my predecessor
-struct node_info my_suc = { 0, port};
-struct node_info my_pre = {-1, -1};
+struct node_info my_suc;
+struct node_info my_pre;
 
 //finger table: a vector of <(id, port)>
 vector<node_info> ftable;
@@ -89,11 +98,16 @@ class MyServiceHandler : virtual public MyServiceIf {
 
 	}
 
-  void rpc_find_successor(suc_data& _return, const int32_t key) {
-    // Your implementation goes here
-    printf("rpc_find_successor\n");
+  void rpc_find_successor(node_info& _return, const int32_t key) {
+
+	if(id == key){
+		_return.id = id;
+		_return.port = port;
+		return;
+	}
+
 	if(id == my_suc.id){
-		_return my_suc;
+		_return = my_suc;
 		return;
 	}
 
@@ -111,28 +125,28 @@ class MyServiceHandler : virtual public MyServiceIf {
 	else{
 	//ask closest predecessor - go through finger table and 
 		//int closest_pre = ftable[ftable.size()-1].id;
-		int pre_port = 0;
+		//int pre_port = 0;
 		struct node_info target_pre;
   		find_predecessor(target_pre, key);
 
 		//Now connect to predecessor and ask for its successor
-		boost::shared_ptr<TSocket> socket(new TSocket("localhost", ftable[i].port));
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_pre.port));
 		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
 		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 		
 		MyServiceClient client(protocol);
 		transport->open();
-		suc_data result;
+		node_info result;
 		client.rpc_find_successor(result, key);
 		transport->close();
 			
 		_return = result;
 		return;
-		}
-		//if not found
-		_return = my_suc;
-		return;
 	}
+		//if not found
+		//_return = my_suc;
+		//return;
+	
   }
 
 //Node asks for keys that belong to him
@@ -150,13 +164,13 @@ class MyServiceHandler : virtual public MyServiceIf {
 	
   }
 
-  void rpc_give_local_successor(suc_data& _return) {
+  void rpc_give_local_successor(node_info& _return) {
     // Your implementation goes here
     printf("rpc_give_local_successor\n");
 	_return = my_suc;
   }
 
-  void find_predecessor(suc_data& _return, const int32_t key) {
+  void find_predecessor(node_info& _return, const int32_t key) {
 
 	int inflated_key = key;
 	if(key<id){		//Tke care of wrap arounds
@@ -176,27 +190,44 @@ class MyServiceHandler : virtual public MyServiceIf {
 			return;
 		}
 	}
+	_return.id = id;
+	_return.port = port;
+	return;
   }
 
 
   void rpc_add_file(std::string& _return, const std::string& filename, const std::string& data, const int32_t key) {
 	//If listener make call, then first hash filename and then search for right place to insert
+	int target_key = key;
 	if(key == -1){
-		key = hash(filename);
+		target_key = hash(filename);
 	}
-	if(key >my_pred.id && key <=id){
-		struct file_info filedata = {filename, data};
-		key_table.insert(pair<int_32, file_info>(key, filedata));
-		_return = get_ADD_FILE_result_as_string(filename, key, id);
+	if(target_key >my_pre.id && target_key <=id){
+		struct file_info filedata;
+		filedata.name = filename;
+		filedata.data = data;
+		key_table.insert(pair<int32_t, file_info>(target_key, filedata));
+		_return = get_ADD_FILE_result_as_string(&filename[0], target_key, id);
 		return;
 	}
 	//Not my file
 	else{
 		//local call, no need to connect
-		struct node_info target_suc = rpc_find_successor(key);
+		struct node_info target_suc;
+		rpc_find_successor(target_suc, target_key);
 
 		//Connect to target_suc.port
-		_return = object.rpc_add_file(filename, data, key);
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
+		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+		
+		MyServiceClient client(protocol);
+		transport->open();
+		string result;
+		client.rpc_add_file(result, filename, data, target_key);
+		transport->close();
+			
+		_return = result;
 		return;
 	}
   }
@@ -204,29 +235,38 @@ class MyServiceHandler : virtual public MyServiceIf {
   void rpc_del_file(std::string& _return, const std::string& filename, const int32_t key) {
 
 	//If listener make call, then first hash filename and then search for right place to insert
+	int nkey = key;
 	if(key == -1){
-		key = hash(filename);
+		nkey = hash(filename);
 	}
 
 	//If file should be in my key table
-	if(key >my_pred.id && key <=id){
+	if(nkey >my_pre.id && nkey <=id){
 		//If key not found
-		if(key_table.find(key) == key_table.end()){
-			_return = get_DEL_FILE_result_as_string(filename, key, false, -1);
+		if(key_table.find(nkey) == key_table.end()){
+			_return = get_DEL_FILE_result_as_string(&filename[0], nkey, false, -1);
 			return;
 		}
 		//if file found then delete from map
-		key_table.erase( key_table.find(key) ); 
-		_return = get_DEL_FILE_result_as_string(filename, key, true, id);
-		return
+		key_table.erase( key_table.find(nkey) ); 
+		_return = get_DEL_FILE_result_as_string(&filename[0], nkey, true, id);
+		return;
 	}
 
 	//Not my file
 	else{
 		//local call, no need to connect
-		struct node_info target_suc = rpc_find_successor(key);
+		struct node_info target_suc;
+		rpc_find_successor(target_suc, nkey);
 		//Connect to target_suc.port
-		_return = object.rpc_del_file(filename, key);
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
+		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+		
+		MyServiceClient client(protocol);
+		transport->open();
+		client.rpc_del_file(_return, filename, nkey);
+		transport->close();
 		return;
 	}
 
@@ -235,29 +275,38 @@ class MyServiceHandler : virtual public MyServiceIf {
   void rpc_get_file(std::string& _return, const std::string& filename, const int32_t key) {
 
 	//If listener make call, then first hash filename and then search for right place to insert
+	int nkey = key;
 	if(key == -1){
-		key = hash(filename);
+		nkey = hash(filename);
 	}
 
 	//If file should be in my key table
-	if(key >my_pred.id && key <=id){
+	if(nkey >my_pre.id && nkey <=id){
 		//If key not found
-		if(key_table.find(key) == key_table.end()){
-			_return = get_GET_FILE_result_as_string(filename, key, false, -1, NULL);
+		if(key_table.find(nkey) == key_table.end()){
+			_return = get_GET_FILE_result_as_string(&filename[0], nkey, false, -1, NULL);
 			return;
 		}
 		//if file found then return fdata from map
-		struct file_info finfo = key_table.find(key); 
-		_return = get_GET_FILE_result_as_string(finfo.name, key, true, id, finfo.data);
+		struct file_info finfo = (key_table.find(nkey))->second; 
+		_return = get_GET_FILE_result_as_string(&(finfo.name)[0], nkey, true, id, &(finfo.data)[0]);
 		return;
 	}
 
 	//Not my file
 	else{
 		//local call, no need to connect
-		struct node_info target_suc = rpc_find_successor(key);
+		struct node_info target_suc;
+		rpc_find_successor(target_suc, nkey);
 		//Connect to target_suc.port
-		_return = object.rpc_get_file(filename, key);
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
+		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+		
+		MyServiceClient client(protocol);
+		transport->open();
+		client.rpc_get_file(_return, filename, nkey); 
+		transport->close();
 		return;
 	}
 
@@ -269,10 +318,18 @@ class MyServiceHandler : virtual public MyServiceIf {
 		return;
 	}
 	else{
-	struct node_info target_suc = rpc_find_successor(key);
+	struct node_info target_suc;
+	rpc_find_successor(target_suc, key);
 	
 	//Connect to target_suc
-	_return = object.rpc_get_table(key);
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
+		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+		
+		MyServiceClient client(protocol);
+		transport->open();
+		client.rpc_get_table(_return, key); 
+		transport->close();
 	return;
 	}
  
@@ -306,7 +363,8 @@ int main(int argc, char **argv) {
   server.serve();
 
     //INIT_LOCAL_LOGGER();
-	
+
+	init_node_info_structs();
 	check_usage(argc);
 	parse_args(argc, argv);
 	make_asserts();
@@ -314,8 +372,6 @@ int main(int argc, char **argv) {
 	// configureLogging(logconffile);     /* if you want to use the log4cxx, uncomment this */
 	
 	//Node Join:
-	setup_server();
-
 	setup_successor();
 	setup_finger_table();
 	setup_key_table();
@@ -325,6 +381,33 @@ int main(int argc, char **argv) {
 
   return 0;
 }
+
+//Because structs cannot be initialized with {..}
+void init_node_info_structs(){
+
+	my_suc.id = 0;
+	my_suc.port = port;
+	my_pre.id = -1;
+	my_pre.port = -1;
+
+
+}
+
+int32_t hash(string fname){
+
+	SHA1Context sha;
+	SHA1Reset(&sha);
+	unsigned int strsize = strlen(&fname[0]);
+	SHA1Input(&sha, &fname[0], strsize);		//todo: check if strlen works 
+
+	if(!SHA1Result(&sha)){
+		fprintf(stderr, "key_gen_test: could not compute key ID for %s\n", fname);
+		return -1;
+	}
+	int32_t new_key_id = sha.Message_Digest[4]%((int)pow(2,m));
+	return new_key_id;
+}
+
 
 void connect_to_port(int port_to_connect_to){
 
