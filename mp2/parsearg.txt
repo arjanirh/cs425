@@ -1,0 +1,89 @@
+void parse_args(int argc, char **argv){
+
+    struct option long_options[] = {
+        /* mandatory args */
+
+        {"m", required_argument, 0, 1000},
+
+        /* optional args */
+
+        /* Start of sequence of ports the listener should try.
+         */
+        {"startingPort", required_argument, 0, 1001},
+
+        /* port of which node to connect to, not not given, create node 0. */
+        {"attachToNode", required_argument, 0, 1002},
+
+		
+        /* intervals (seconds) for runs of the stabilization and
+         * fixfinger algorithms */
+        {"stabilizeInterval", required_argument, 0, 1003},
+        {"fixInterval", required_argument, 0, 1004},
+		
+		
+		/*logging file*/
+		{"logConf", required_argument, 0, 1005},
+
+        {0, 0, 0, 0},
+    };
+	
+	
+	 while ((opt = getopt_long(argc, argv, "", long_options, &long_index)) != -1)
+    {
+
+        switch (opt) {
+        case 0:
+            if (long_options[long_index].flag != 0) {
+                break;
+            }
+            printf("option %s ", long_options[long_index].name);
+            if (optarg) {
+                printf("with arg %s\n", optarg);
+            }
+            printf("\n");
+            break;
+
+        case 1000:
+
+            m = strtol(optarg, NULL, 10);
+            assert((m >= 3) && (m <= 10));
+            break;
+
+        case 1001:
+            startingPort = strtol(optarg, NULL, 10);
+            assert(startingPort >= 0);
+            break;
+
+        case 1002:
+			attachToNode = strtol(optarg, NULL, 10);
+            assert(attachToNode > 0);
+            break;
+
+ 
+        case 1003:
+            stabilizeInterval = strtol(optarg, NULL, 10);
+            assert(stabilizeInterval > 0);
+            break;
+
+        case 1004:
+            fixInterval = strtol(optarg, NULL, 10);
+            assert(fixInterval > 0);
+            break;
+
+        case 1005:
+            logConf = optarg;
+            break;
+
+        default:
+            exit(1);
+        }
+    }
+}
+
+
+
+
+int main{
+
+	cout<<"Enter Command" <<endl;
+	cin<< commsnd;
