@@ -14,8 +14,18 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <sha1.h>
 #include <math.h>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+
+#include <stdio.h>
+#include <string.h>
+#ifdef WIN32
+#include <io.h>
+#endif
+#include <fcntl.h>
+#include "sha1.h"
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
@@ -156,7 +166,7 @@ class MyServiceHandler : virtual public MyServiceIf {
 	std::map<int32_t, file_info>::iterator it;
 	for(it = key_table.begin(); it!= key_table.end(); it++){
 		if(it->first <= key){
-			//_return.insert(pair<int_32, file_info>(it->first, it->second));
+			//_return.insert(pair<int32_t, file_info>(it->first, it->second));
 			_return.insert(*it);
 			key_table.erase(it);	
 		}
@@ -398,10 +408,11 @@ int32_t hash(string fname){
 	SHA1Context sha;
 	SHA1Reset(&sha);
 	unsigned int strsize = strlen(&fname[0]);
-	SHA1Input(&sha, &fname[0], strsize);		//todo: check if strlen works 
+	SHA1Input(&sha,(unsigned char*) &fname[0], strsize);		//todo: check if strlen works 
 
 	if(!SHA1Result(&sha)){
-		fprintf(stderr, "key_gen_test: could not compute key ID for %s\n", fname);
+		//fprintf(stderr, "key_gen_test: could not compute key ID for %s\n", fname);
+		cerr<<"key_gen_test: could not compute key ID for "<<fname<<endl;
 		return -1;
 	}
 	int32_t new_key_id = sha.Message_Digest[4]%((int)pow(2,m));
@@ -417,7 +428,7 @@ void connect_to_port(int port_to_connect_to){
 
 	MyServiceClient client(protocol);
     transport->open();
-	map<int_32, file_info> newmap;
+	map<int32_t, file_info> newmap;
 	client.rpc_transfer_keys(newmap, id);
 	transport->close();
 
@@ -434,19 +445,19 @@ void fixKeys(){
 
 	MyServiceClient client(protocol);
     transport->open();
-	map<int_32, file_info> newmap;
+	map<int32_t, file_info> newmap;
 	client.rpc_transfer_keys(newmap, id);
 	transport->close();
 
 	//Now add the newly recd keys to my map
-	map<int_32, file_info>::iterator it;
-	key_table.insert(newmap.start(), newmap.end());
+	map<int32_t, file_info>::iterator it;
+	key_table.insert(newmap.begin(), newmap.end());
 }
 
 /*
  * Ask suc for pred, if diff than me, then set, and notify new succ
  */ 
-void *stabilize(){
+void *stabilize(void* thread_arg){
 	
 	while(1){
 		//Connect to suc.port
@@ -470,21 +481,23 @@ void *stabilize(){
 	
 		//Now notify successor that i am your pred
 		//Connect to suc.port --NEED THIS AGAIN because suc might have changed in the if case
-		boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
-		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+		boost::shared_ptr<TSocket> n_socket(new TSocket("localhost", my_suc.port));
+		boost::shared_ptr<TTransport> n_transport(new TBufferedTransport(n_socket));
+		boost::shared_ptr<TProtocol> n_protocol(new TBinaryProtocol(n_transport));
 	
-		MyServiceClient client(protocol);
-	    transport->open();
-		struct node_info my_node_info = {id, port};
-		client.rpc_notify_of_predecessor(my_node_info);
-		transport->close();
+		MyServiceClient n_client(n_protocol);
+	    n_transport->open();
+		struct node_info my_node_info;
+		my_node_info.id = id;
+		my_node_info.port = port;
+		n_client.rpc_notify_of_predecessor(my_node_info);
+		n_transport->close();
 	
 		fixKeys();
 		//Sleep for an interval
 		sleep(stabilizeInterval);
 	}
-
+	return NULL;
 }
 
 // Make thread 
@@ -495,15 +508,19 @@ void setup_stabilize_thread(){
 }
 
 //Fix random finger
-void *fix_fingers(){
+void *fix_fingers(void* thread_arg){
 
 	while(1){
 		int finger = rand() % m;
 	
 		//Ask myself for finding successor for a particular key
-		ftable[finger].id = rpc_find_successor(id);		
+		MyServiceHandler client;
+		struct node_info result;
+		client.rpc_find_successor(result, id);		
+		ftable[finger] = result;
 		sleep(fixInterval);
 	}
+	return NULL;
 }
 
 void setup_fixfinger_thread(){
@@ -543,7 +560,9 @@ void setup_finger_table(){
 
 	//if introducer then always copy myself m times into ftable
 	if(id==0){
-		struct node_info entry= { id, port };
+		struct node_info entry;
+		entry.id = id;
+		entry.port = port;
 
 		for(int i=0;i<m; i++){
 			ftable.push_back(entry);
