@@ -22,4 +22,4 @@ listener: listener.o $(GEN_OBJ)
 	$(CXX) -Wall $(INC) -c $< -o $@
 
 clean:
-	$(RM) *.o node
+	$(RM) *.o node listener

@@ -10,6 +10,14 @@
 #include <transport/TServerSocket.h>
 #include <transport/TBufferTransports.h>
 
+//#include <thrift/concurrency/ThreadManager.h>
+//#include <thrift/concurrency/PosixThreadFactory.h>
+//#include <TThreadedServer.h>
+#include <server/TThreadedServer.h>
+
+using namespace ::apache::thrift::concurrency;
+
+
 #include <getopt.h>
 #include <stdarg.h>
 #include <assert.h>
@@ -110,6 +118,8 @@ class MyServiceHandler : virtual public MyServiceIf {
 
   void rpc_find_successor(node_info& _return, const int32_t key) {
 
+	//cout<<"[node "<<id<<"] Called find suc on me for key="<<key<<"\n";
+
 	if(id == key){
 		_return.id = id;
 		_return.port = port;
@@ -117,6 +127,8 @@ class MyServiceHandler : virtual public MyServiceIf {
 	}
 
 	if(id == my_suc.id){
+		
+	//	cout<<"[node "<<id<<"] returning successor\n";
 		_return = my_suc;
 		return;
 	}
@@ -208,20 +220,30 @@ class MyServiceHandler : virtual public MyServiceIf {
 
   void rpc_add_file(std::string& _return, const std::string& filename, const std::string& data, const int32_t key) {
 	//If listener make call, then first hash filename and then search for right place to insert
+//	cout<<"[node] calling add file\n";
 	int target_key = key;
 	if(key == -1){
 		target_key = hash(filename);
+		cout<<"[node]: hashed key = "<<target_key<<endl;
 	}
-	if(target_key >my_pre.id && target_key <=id){
+	int inflated_id = id;
+	if(id ==0){
+		inflated_id = pow(2,m);
+	}
+	
+	if((target_key >my_pre.id && target_key <=inflated_id )|| (my_pre.id == id )){			//TODO add this OR condition to other functions also
+	//cout<<"condition 1\n";
 		struct file_info filedata;
 		filedata.name = filename;
 		filedata.data = data;
 		key_table.insert(pair<int32_t, file_info>(target_key, filedata));
 		_return = get_ADD_FILE_result_as_string(&filename[0], target_key, id);
+
 		return;
 	}
 	//Not my file
 	else{
+//	cout<<"condition 2\n";
 		//local call, no need to connect
 		struct node_info target_suc;
 		rpc_find_successor(target_suc, target_key);
@@ -251,7 +273,11 @@ class MyServiceHandler : virtual public MyServiceIf {
 	}
 
 	//If file should be in my key table
-	if(nkey >my_pre.id && nkey <=id){
+	int inflated_id = id;
+	if(id ==0){
+		inflated_id = pow(2,m);
+	}
+	if((nkey >my_pre.id && nkey <=inflated_id) || (my_pre.id == id)){
 		//If key not found
 		if(key_table.find(nkey) == key_table.end()){
 			_return = get_DEL_FILE_result_as_string(&filename[0], nkey, false, -1);
@@ -291,7 +317,7 @@ class MyServiceHandler : virtual public MyServiceIf {
 	}
 
 	//If file should be in my key table
-	if(nkey >my_pre.id && nkey <=id){
+	if((nkey >my_pre.id && nkey <=id) || (my_pre.id == id)){
 		//If key not found
 		if(key_table.find(nkey) == key_table.end()){
 			_return = get_GET_FILE_result_as_string(&filename[0], nkey, false, -1, NULL);
@@ -323,15 +349,21 @@ class MyServiceHandler : virtual public MyServiceIf {
   }
   void rpc_get_table(std::string& _return, const int32_t key) {
 
+	//cout<<"[node] ftable.size="<<ftable.size()<<endl;
 	if(key == id){
+	cout<<"[node "<<id<<"] returning my table\n";
 		_return = get_GET_TABLE_result_as_string(ftable, m, key, 0, key_table);
 		return;
 	}
 	else{
 	struct node_info target_suc;
+	cout<<"[node "<<id<<"] calling find suc on key="<<key<<endl; 
 	rpc_find_successor(target_suc, key);
 	
+	
 	//Connect to target_suc
+	cout<<"[node "<<id<<"] found suc, connecting to it to get table\n";
+	
 		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
 		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
 		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
@@ -354,7 +386,12 @@ class MyServiceHandler : virtual public MyServiceIf {
   }
 
   void rpc_notify_of_predecessor(const node_info& new_pre) {
-	if(my_pre.id == -1 || (new_pre.id > my_pre.id && new_pre.id < id)){
+
+	int inflated_id = id;
+	if(id == 0){
+		inflated_id = pow(2,m);
+	}
+	if(my_pre.id == -1 || (new_pre.id > my_pre.id && new_pre.id < inflated_id) || (my_pre.id == id) ){
 		my_pre = new_pre;
 	}
   }
@@ -362,26 +399,18 @@ class MyServiceHandler : virtual public MyServiceIf {
 };
 
 int main(int argc, char **argv) {
-  //int port = 9090;
-  shared_ptr<MyServiceHandler> handler(new MyServiceHandler());
-  shared_ptr<TProcessor> processor(new MyServiceProcessor(handler));
-  shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
-  shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
-  shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
 
-  TSimpleServer server(processor, serverTransport, transportFactory, protocolFactory);
-  server.serve();
-
-    //INIT_LOCAL_LOGGER();
-
+	cout<<"[node] Starting node process with PID= "<<getpid()<<endl;
+	
 	init_node_info_structs();
 	check_usage(argc);
 	parse_args(argc, argv);
 	make_asserts();
 
-	// configureLogging(logconffile);     /* if you want to use the log4cxx, uncomment this */
-	
+//cout<<"In node, id="<<id<<", m="<<m<<endl;
+
 	//Node Join:
+	cout<<"[node "<<id<<"]\n";
 	setup_successor();
 	setup_finger_table();
 	setup_key_table();
@@ -389,6 +418,23 @@ int main(int argc, char **argv) {
 	setup_stabilize_thread();			//FIX keys also
 	setup_fixfinger_thread();
 
+  shared_ptr<MyServiceHandler> handler(new MyServiceHandler());
+  shared_ptr<TProcessor> processor(new MyServiceProcessor(handler));
+  shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
+  shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
+  shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
+
+  TSimpleServer server(processor, serverTransport, transportFactory, protocolFactory);		//TODO: change to Tthreaded
+  //TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);		//TODO: change to Tthreaded
+  server.serve();
+
+    //INIT_LOCAL_LOGGER();
+
+
+	// configureLogging(logconffile);     /* if you want to use the log4cxx, uncomment this */
+
+	while(1);			//run forever
+	
   return 0;
 }
 
@@ -490,6 +536,8 @@ void *stabilize(void* thread_arg){
 		struct node_info my_node_info;
 		my_node_info.id = id;
 		my_node_info.port = port;
+
+		//cout<<"[node "<<id<<"]\n";
 		n_client.rpc_notify_of_predecessor(my_node_info);
 		n_transport->close();
 	
@@ -502,9 +550,11 @@ void *stabilize(void* thread_arg){
 
 // Make thread 
 void setup_stabilize_thread(){
-
-	pthread_create(&stabilize_thread, NULL, stabilize, NULL);	
-
+	
+	int ret = 1;
+	while(ret != 0){
+		ret = pthread_create(&stabilize_thread, NULL, stabilize, NULL);	
+	}
 }
 
 //Fix random finger
@@ -516,7 +566,8 @@ void *fix_fingers(void* thread_arg){
 		//Ask myself for finding successor for a particular key
 		MyServiceHandler client;
 		struct node_info result;
-		client.rpc_find_successor(result, id);		
+		int target_key = (int)(id + pow(2,finger)) % (int)(pow(2,m));
+		client.rpc_find_successor(result, target_key);		
 		ftable[finger] = result;
 		sleep(fixInterval);
 	}
@@ -525,7 +576,10 @@ void *fix_fingers(void* thread_arg){
 
 void setup_fixfinger_thread(){
 
-	pthread_create(&fixfinger_thread, NULL, fix_fingers, NULL);	
+	int ret = 1;
+	while(ret != 0){
+		ret = pthread_create(&fixfinger_thread, NULL, fix_fingers, NULL);	
+	}
 }
 
 /*
@@ -536,6 +590,7 @@ void setup_fixfinger_thread(){
  */
 void setup_successor(){
 
+	cout<<"[node "<<id<<"]setting up successor\n";
 	//If introducer then I am my suc
 	if(id==0){
 		my_suc.id = 0;
@@ -543,6 +598,7 @@ void setup_successor(){
 	}
 	else{
 		//Ask id0 to find my suc
+		cout<<"[node "<<id<<"]asking id0 to find successor\n";
 		boost::shared_ptr<TSocket> socket(new TSocket("localhost", introducerPort));
 		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
 		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
@@ -553,11 +609,13 @@ void setup_successor(){
 		transport->close();
 	}
 
+		cout<<"[node "<<id<<"]successor set up as: "<<my_suc.id<<" \n";
 }
 
 
 void setup_finger_table(){
 
+	//cout<<"[node] calling setup finger table\n";
 	//if introducer then always copy myself m times into ftable
 	if(id==0){
 		struct node_info entry;

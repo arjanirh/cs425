@@ -39,10 +39,10 @@ struct node_info{
 void parse_args(int argc, char **argv);
 void setup_and_connect_to_node();
 void handle_command();
-void add_file();
-void del_file();
-void get_file();
-void get_table();
+void add_file(string, string);
+void del_file(string );
+void get_file(string);
+void get_table(int);
 void add_node(int id);
 
 
@@ -56,16 +56,13 @@ int stabilizeInterval = 1;		//Default value of 1
 int fixInterval = 1;			//Default value of 1
 const char* logConf = NULL;
 int introducerPort = -1;
-string filename;
-string filedata;
-int getnodeid;
 const char* logConfig = NULL;
 
 int main(int argc, char** argv){
 
 	parse_args(argc, argv);
 
-//	setup_and_connect_to_node();
+	setup_and_connect_to_node();
 	
 	handle_command();
 
@@ -77,59 +74,54 @@ void handle_command(){
 	string commandinput;
 	string command;
 
+	string filename;
+	string filedata;
+	int getnodeid;
 	while(1){
 
-	cout<<"Enter command"<<endl;
+	cout<<"Enter command: ";
 	getline(cin,commandinput);
 	istringstream stream1(commandinput, istringstream::in);
 	stream1 >> command;
 
 			if(command == "ADD_NODE"){
-			cout<<"Add node was called\n";
+				while(!stream1.eof()){
+					stream1>>getnodeid;
+					add_node(getnodeid);
+				}
 			}
 
 			else if(command == "ADD_FILE"){
 				stream1>>filename;
 				stream1.get();
 				getline(stream1,filedata); 
-				//add_file();
+				add_file(filename, filedata);
 			}
 
-			//case 'DEL_FILE':
 			else if(command == "DEL_FILE"){
 				stream1>>filename;
-//				cout<<"delete file was called with filename: "<<filename<<endl; 
-				//del_file();
+				del_file(filename);
 			}
-			//case 'GET_FILE':
 			else if(command == "GET_FILE"){
 				stream1>>filename;
-//				cout<<"get file was called with filename: "<<filename<<endl; 
-				//get_file();
+				get_file(filename);
 			}
 
-			//case 'GET_TABLE':
 			else if(command == "GET_TABLE"){
 				stream1>>getnodeid;
-//				cout<<"get Table was called with nodeid:"<<getnodeid<<endl;
-				//get_table();
+				get_table(getnodeid);
 			}
-			//case 'exit':
 			else if(command == "exit"){
 				cout<<"Exiting... "<<endl;
 				exit(0);
 			}
-
-		//	default:
 			else{
 				cout<<"Invalid command"<<endl<<"Enter 'exit' to quit program\n";
-
 			}
 	}	
 }
 
 void setup_and_connect_to_node(){
-
 
 	srand(time(NULL));
 	
@@ -137,108 +129,83 @@ void setup_and_connect_to_node(){
 		add_node(0);
 	}
 	
-	boost::shared_ptr<TSocket> socket(new TSocket("localhost", introducerPort));
-	//TODO: check if port was valid if socket == null
-
-	return;
-/*
-	currentPort = startingPort;
-	if(startingPort == -1){
-		currentPort = (rand() % 8000)+1025;
-	}
-
-	if(attachToNode == -1){
-		//create node 0 process 
-		std::stringstream s;
-		s << "./node";
-		s<< " --m="<<m;
-		s<< " --id="<<0;
-		s<< " --port="<<currentPort;
-		introducerPort = currentPort;
-		currentPort++;
-
-		if(stabilizeInterval != -1){
-			s<< " --stabilizeInterval="<<stabilizeInterval;
-		}
-		if(fixInterval != -1){
-			s<< " --fixInterval="<<fixInterval;
-		}
-		if(logConfig != NULL){
-			s<< " --logConfig="<<logConfig;
-		}
-		
-		string shell_cmd = s.str();
-		system(&shell_cmd[0]);
-
-		//connect to it (using thrift)
-		//boost::shared_ptr<TSocket> socket(new TSocket("localhost", introducerPort));
-		//boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-		//boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
-		
-		//if cant connect on port, then try another port
-
-	}
-	else{
-		//connect to that node
-	}
-
-*/
 }
 
 void add_node(int id){
 
-	srand(time(NULL));
+	bool try_again = true;
+		currentPort = startingPort;
+		if(startingPort == -1){
+			currentPort = (rand() % 8000)+1025;
+		}
+	while(try_again){
+	
+	
+			char *exec_cmd[9];
+			int buf_size = 30;		
 
-	currentPort = startingPort;
-	if(startingPort == -1){
-		currentPort = (rand() % 8000)+1025;
-	}
-
-	//if(attachToNode == -1){
-		//create node 0 process 
-		std::stringstream s;
-		s << "./node";
-		s<< " --m="<<m;
-		s<< " --id="<<id;
-		s<< " --port="<<currentPort;
-		if(id==0)
-			introducerPort = currentPort;
-		currentPort++;
-
-		if(id!=0)
-			if(introducerPort != -1){
-			s<< " --introducerPort="<<introducerPort;
+			for(int i=0;i<8;i++){
+				exec_cmd[i] = new char[buf_size];
 			}
-		if(stabilizeInterval != -1){
-			s<< " --stabilizeInterval="<<stabilizeInterval;
-		}
-		if(fixInterval != -1){
-			s<< " --fixInterval="<<fixInterval;
-		}
-		if(logConfig != NULL){
-			s<< " --logConfig="<<logConfig;
-		}
-
-		string shell_cmd = s.str();
-		system(&shell_cmd[0]);
-
-		//connect to it (using thrift)
-		boost::shared_ptr<TSocket> socket(new TSocket("localhost", introducerPort));
-		//boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-		//boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+			int count = 0;
+			sprintf(exec_cmd[count++], "./listener");
+	
+			sprintf(exec_cmd[count++], "--m=%d",m);
+			sprintf(exec_cmd[count++], "--id=%d",id);
+			sprintf(exec_cmd[count++], "--port=%d",currentPort);
+	
+			if(id==0)
+				introducerPort = currentPort;
+	
+			if(id!=0)
+				if(introducerPort != -1){
+					sprintf(exec_cmd[count++], "--introducerPort=%d",introducerPort);
+				}
+			if(stabilizeInterval != -1){
+				sprintf(exec_cmd[count++], "--stabilizeInterval=%d",stabilizeInterval);
+			}
+			if(fixInterval != -1){
+				sprintf(exec_cmd[count++], "--fixInterval=%d",fixInterval);
+			}
+			if(logConfig != NULL){
+				sprintf(exec_cmd[count++], "--logConfig=%s",logConfig);
+	
+			}
+	
+			exec_cmd[count] = NULL;
+			pid_t pid = fork();
+			if(pid == 0){
+				//Child precess, execv into node
+				execv("./node", exec_cmd); 
+			}
+	
+			//Try connecting to node
+			sleep(1);
+			try{
+				boost::shared_ptr<TSocket> socket(new TSocket("localhost", currentPort));
+				boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+				boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+				
+				MyServiceClient client(protocol);
+				transport->open();
+				transport->close();
+				try_again = false;
+			}
+			catch(apache::thrift::transport::TTransportException oops){
+				cout<<"Caught exception in listener\n";
+				try_again = true;			
+			}
+			currentPort = (rand() % 8000)+1025;
+	}	
 }
 
-void add_file(){
+void add_file(string filename, string filedata){
 		
 		int cur_port;
-		if(attachToNode == -1) 
+		if(attachToNode != -1) 
 			cur_port = attachToNode;
-			//boost::shared_ptr<TSocket> socket(new TSocket("localhost", attachToNode));
 		else
 			cur_port = introducerPort;
-			//boost::shared_ptr<TSocket> socket(new TSocket("localhost", introducerPort));
-		//boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-		//boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 
 		boost::shared_ptr<TSocket> socket(new TSocket("localhost", cur_port));
 		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
@@ -253,43 +220,38 @@ void add_file(){
 
 	}
 
-void get_table(){
+void get_table(int getnodeid){
 
+		
 		int cur_port;
-		if(attachToNode == -1){
+		if(attachToNode != -1){
 			cur_port = attachToNode;
 		}
 		else{
 			cur_port = introducerPort;
 		}
 
+		//cout<<"Getting table from port="<<cur_port<<"\n";
 		boost::shared_ptr<TSocket> socket(new TSocket("localhost", cur_port));
 		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
 		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 
+		//cout<<"b2\n";
 		MyServiceClient client(protocol);
 		transport->open();
 		string result;
 		client.rpc_get_table(result, getnodeid);
 		transport->close();
 		cout<<result<<endl;
+		//cout<<"b3\n";
 
 	}
 
 
-void get_file(){
+void get_file(string filename){
 		
-		/*
-		if(attachToNode == -1) 
-			boost::shared_ptr<TSocket> socket(new TSocket("localhost", attachToNode));
-		else
-			boost::shared_ptr<TSocket> socket(new TSocket("localhost", introducerPort));
-		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
-*/
-
 		int cur_port;
-		if(attachToNode == -1){
+		if(attachToNode != -1){
 			cur_port = attachToNode;
 		}
 		else{
@@ -311,10 +273,10 @@ void get_file(){
 	}
 
 
-void del_file(){
+void del_file(string filename){
 
 		int cur_port;
-		if(attachToNode == -1){
+		if(attachToNode != -1){
 			cur_port = attachToNode;
 		}
 		else{
