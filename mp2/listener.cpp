@@ -8,13 +8,11 @@
 #include <time.h>
 #include <stdlib.h>
 
-
 #include "MyService.h"
 #include <transport/TSocket.h>
 #include <transport/TBufferTransports.h>
 #include <protocol/TBinaryProtocol.h>
 
-//Added
 #include <server/TSimpleServer.h>
 #include <transport/TServerSocket.h>
 
@@ -29,13 +27,13 @@ using namespace  ::mp2;
 
 using namespace std;
 
+//Holds info about successor and predecessor
 struct node_info{
-
 	int id;
 	int port;
 };
 
-//Functions declarations
+//Function declarations
 void parse_args(int argc, char **argv);
 void setup_and_connect_to_node();
 void handle_command();
@@ -60,18 +58,24 @@ const char* logConfig = NULL;
 
 int main(int argc, char** argv){
 
-	apache::thrift::GlobalOutput.setOutputFunction(donothing);
+	//Parse the args from the shell, initialize all globals
 	parse_args(argc, argv);
 
+
+	//Starts node0 if required
 	setup_and_connect_to_node();
 	
+	//Loop indefinitely and ask for commands from user
 	handle_command();
 
 return 0;
 }
 
+//Used for redirecting apache warnings
 void donothing(const char*){}
 
+//Main function that handles commands form user
+//ASSUMPTIONS: calling 'exit' will quit the program
 void handle_command(){
 
 	string commandinput;
@@ -82,15 +86,17 @@ void handle_command(){
 	int getnodeid;
 	while(1){
 
+	//Parse the command
 	cout<<"Enter command: ";
 	getline(cin,commandinput);
 	istringstream stream1(commandinput, istringstream::in);
 	stream1 >> command;
 
+			/* PArse the arguments */
+
 			if(command == "ADD_NODE"){
 				while(!stream1.eof()){
 					stream1>>getnodeid;
-					cout<<"Add node called on id=\""<<getnodeid<<"\""<<endl;
 					add_node(getnodeid);
 
 				}
@@ -126,43 +132,51 @@ void handle_command(){
 	}	
 }
 
+//called first time listener starts, to start node 0 (or attach to specific node)
 void setup_and_connect_to_node(){
 
 	srand(time(NULL));
 	
+	currentPort = startingPort;
+	if(startingPort == -1){
+		currentPort = (rand() % 7000)+3000;
+	}
+
 	if(attachToNode == -1){
 		add_node(0);
 	}
 	
 }
 
+/* Creates a node process 
+* @param id: the id of the node to be created
+*	ASSUMPTIONS: Will never be called on a node already present
+*/
 void add_node(int id){
 
 	bool try_again = true;
-		currentPort = startingPort;
-		if(startingPort == -1){
-			currentPort = (rand() % 7000)+3000;
-		}
+		//Loop until you connect to valid port
 	while(try_again){
-	
-//			cout<<"ADDING NODE port = "<<currentPort<<endl;
 	
 			char *exec_cmd[9];
 			int buf_size = 30;		
 
+			//for the node args
 			for(int i=0;i<8;i++){
 				exec_cmd[i] = new char[buf_size];
 			}
 			int count = 0;
+			//create exec command 
 			sprintf(exec_cmd[count++], "./listener");
 	
 			sprintf(exec_cmd[count++], "--m=%d",m);
 			sprintf(exec_cmd[count++], "--id=%d",id);
 			sprintf(exec_cmd[count++], "--port=%d",currentPort);
 	
+			//If creating node0 then initialize so it can be used later
 			if(id==0)
 				introducerPort = currentPort;
-	
+			//Send the introducer port to all other nodes being created	
 			if(id!=0)
 				if(introducerPort != -1){
 					sprintf(exec_cmd[count++], "--introducerPort=%d",introducerPort);
@@ -177,11 +191,14 @@ void add_node(int id){
 				sprintf(exec_cmd[count++], "--logConfig=%s",logConfig);
 	
 			}
-	
+
+			//Point the last arg to null
 			exec_cmd[count] = NULL;
+
+			//Fork, and then if child, immediately execv into node process code
 			pid_t pid = fork();
 			if(pid == 0){
-				//Child precess, execv into node
+				//Child precess, execv into node.cpp with parameters
 				execv("./node", exec_cmd); 
 			}
 	
@@ -203,13 +220,19 @@ void add_node(int id){
 				transport->close();
 				try_again = true;			
 			}
-			//currentPort = (rand() % 8000)+1025;
+			if(currentPort > 9990){
+				currentPort = 3500;
+			}
 			currentPort++;
 
-//	try_again = false;
 	}	
 }
 
+/* 
+ * Calls rpc on attached node to add a file
+ * @param: filename: name of the file
+ * @param filedata: the data contents of file
+ */
 void add_file(string filename, string filedata){
 		
 		int cur_port;
@@ -225,15 +248,20 @@ void add_file(string filename, string filedata){
 		MyServiceClient client(protocol);
 		transport->open();
 		string result;
+		//Calls rpc with key = -1, so the first node to see -1 will hash filename and then pass that along
 		client.rpc_add_file(result, filename, filedata, -1);
 		transport->close();
 		cout<<result<<endl;
 
 	}
 
+/*
+ * Get table for particular node
+ * @param: node id of the requested table
+ * ASSUMPTIONS: will be called only on a valid node. Because there's no way to check otherwise
+ */ 
 void get_table(int getnodeid){
 
-		
 		int cur_port;
 		if(attachToNode != -1){
 			cur_port = attachToNode;
@@ -242,23 +270,23 @@ void get_table(int getnodeid){
 			cur_port = introducerPort;
 		}
 
-		//cout<<"Getting table from port="<<cur_port<<"\n";
 		boost::shared_ptr<TSocket> socket(new TSocket("localhost", cur_port));
 		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
 		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 
-		//cout<<"b2\n";
 		MyServiceClient client(protocol);
 		transport->open();
 		string result;
 		client.rpc_get_table(result, getnodeid);
 		transport->close();
 		cout<<result<<endl;
-		//cout<<"b3\n";
+}
 
-	}
-
-
+/*
+ * Gets the information about the location of a file
+ * @param filename: the file to be searched for 
+ *  
+ */
 void get_file(string filename){
 		
 		int cur_port;
@@ -277,12 +305,19 @@ void get_file(string filename){
 		MyServiceClient client(protocol);
 		transport->open();
 		string result;
+		//Send in key  as -1, assuming that first node to see -1 will hash filename and pass it on
 		client.rpc_get_file(result, filename, -1);
 		transport->close();
 		cout<<result<<endl;
 
-	}
+}
 
+/*
+ * Deletes given file
+ * @param filename: the file to be deleted
+ * if file does not exist then warning message is printed out
+ *  
+ */
 
 void del_file(string filename){
 
@@ -302,13 +337,18 @@ void del_file(string filename){
 		MyServiceClient client(protocol);
 		transport->open();
 		string result;
+		//Send in key  as -1, assuming that first node to see -1 will hash filename and pass it on
 		client.rpc_del_file(result, filename, -1);
 		transport->close();
 		cout<<result<<endl;
 
 }
 
-
+/*
+ * Parses argv
+ * Inspired from example code given
+ * @param: args given to main()
+ */ 
 void parse_args(int argc, char **argv){
 
     struct option long_options[] = {
