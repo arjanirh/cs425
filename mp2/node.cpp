@@ -99,6 +99,10 @@ struct node_info my_pre;
 //finger table: a vector of <(id, port)>
 vector<node_info> ftable;
 
+pthread_mutex_t suc_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t pre_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
 //key table: a map
 map<int32_t, file_info> key_table; 
 
@@ -118,7 +122,7 @@ class MyServiceHandler : virtual public MyServiceIf {
 
   void rpc_find_successor(node_info& _return, const int32_t key) {
 
-	//cout<<"[node "<<id<<"] Called find suc on me for key="<<key<<"\n";
+//	cout<<"[node "<<id<<"] Called find suc on me for key="<<key<<", mysuc.id="<<my_suc.id<<"\n";
 
 	if(id == key){
 		_return.id = id;
@@ -126,10 +130,14 @@ class MyServiceHandler : virtual public MyServiceIf {
 		return;
 	}
 
+//	cout<<"trying to lock on mysuc \n";
+	pthread_mutex_lock(&suc_mutex);
+//	cout<<"LOCKED mysuc lock\n";
 	if(id == my_suc.id){
 		
 	//	cout<<"[node "<<id<<"] returning successor\n";
 		_return = my_suc;
+	pthread_mutex_unlock(&suc_mutex);
 		return;
 	}
 
@@ -141,10 +149,14 @@ class MyServiceHandler : virtual public MyServiceIf {
 	}
 		
 	if(key>id && key<= inflated_suc_id){
+//		cout<<"[node "<<id<<"] returning suc:="<<my_suc.id<<"\n";
+
 		_return = my_suc;
+		pthread_mutex_unlock(&suc_mutex);
 		return;
 	}
 	else{
+	pthread_mutex_unlock(&suc_mutex);
 	//ask closest predecessor - go through finger table and 
 		//int closest_pre = ftable[ftable.size()-1].id;
 		//int pre_port = 0;
@@ -152,16 +164,21 @@ class MyServiceHandler : virtual public MyServiceIf {
   		find_predecessor(target_pre, key);
 
 		//Now connect to predecessor and ask for its successor
-		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_pre.port));
-		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
-		
-		MyServiceClient client(protocol);
-		transport->open();
-		node_info result;
-		client.rpc_find_successor(result, key);
-		transport->close();
+			node_info result;
+		if(id != target_pre.id){			
+			boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_pre.port));
+			boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+			boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 			
+			MyServiceClient client(protocol);
+			transport->open();
+			client.rpc_find_successor(result, key);
+			transport->close();
+		}
+		else{
+			//rpc_find_successor(result, key);
+		}
+		
 		_return = result;
 		return;
 	}
@@ -189,7 +206,9 @@ class MyServiceHandler : virtual public MyServiceIf {
   void rpc_give_local_successor(node_info& _return) {
     // Your implementation goes here
     printf("rpc_give_local_successor\n");
+	pthread_mutex_lock(&suc_mutex);
 	_return = my_suc;
+	pthread_mutex_unlock(&suc_mutex);
   }
 
   void find_predecessor(node_info& _return, const int32_t key) {
@@ -231,7 +250,10 @@ class MyServiceHandler : virtual public MyServiceIf {
 		inflated_id = pow(2,m);
 	}
 	
-	if((target_key >my_pre.id && target_key <=inflated_id )|| (my_pre.id == id )){			//TODO add this OR condition to other functions also
+	pthread_mutex_lock(&pre_mutex);
+	int preid = my_pre.id;
+	pthread_mutex_unlock(&pre_mutex);
+	if((target_key >preid && target_key <=inflated_id )|| (preid == id )){			//TODO add this OR condition to other functions also
 	//cout<<"condition 1\n";
 		struct file_info filedata;
 		filedata.name = filename;
@@ -249,16 +271,20 @@ class MyServiceHandler : virtual public MyServiceIf {
 		rpc_find_successor(target_suc, target_key);
 
 		//Connect to target_suc.port
-		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
-		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
-		
-		MyServiceClient client(protocol);
-		transport->open();
-		string result;
-		client.rpc_add_file(result, filename, data, target_key);
-		transport->close();
+			string result;
+		if(target_suc.id != id){
+			boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
+			boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+			boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 			
+			MyServiceClient client(protocol);
+			transport->open();
+			client.rpc_add_file(result, filename, data, target_key);
+			transport->close();
+		}
+		else{
+			rpc_add_file(result, filename, data, target_key);
+		}
 		_return = result;
 		return;
 	}
@@ -277,7 +303,11 @@ class MyServiceHandler : virtual public MyServiceIf {
 	if(id ==0){
 		inflated_id = pow(2,m);
 	}
-	if((nkey >my_pre.id && nkey <=inflated_id) || (my_pre.id == id)){
+
+	pthread_mutex_lock(&pre_mutex);
+	int preid = my_pre.id;
+	pthread_mutex_unlock(&pre_mutex);
+	if((nkey >preid && nkey <=inflated_id) || (preid == id)){
 		//If key not found
 		if(key_table.find(nkey) == key_table.end()){
 			_return = get_DEL_FILE_result_as_string(&filename[0], nkey, false, -1);
@@ -295,14 +325,20 @@ class MyServiceHandler : virtual public MyServiceIf {
 		struct node_info target_suc;
 		rpc_find_successor(target_suc, nkey);
 		//Connect to target_suc.port
-		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
-		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
-		
-		MyServiceClient client(protocol);
-		transport->open();
-		client.rpc_del_file(_return, filename, nkey);
-		transport->close();
+		if(target_suc.id != id){
+
+			boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
+			boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+			boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+			
+			MyServiceClient client(protocol);
+			transport->open();
+			client.rpc_del_file(_return, filename, nkey);
+			transport->close();
+		}
+		else{
+			rpc_del_file(_return, filename, nkey);
+		}
 		return;
 	}
 
@@ -316,8 +352,11 @@ class MyServiceHandler : virtual public MyServiceIf {
 		nkey = hash(filename);
 	}
 
+	pthread_mutex_lock(&pre_mutex);
+	int preid = my_pre.id;
+	pthread_mutex_unlock(&pre_mutex);
 	//If file should be in my key table
-	if((nkey >my_pre.id && nkey <=id) || (my_pre.id == id)){
+	if((nkey >preid && nkey <=id) || (preid == id)){
 		//If key not found
 		if(key_table.find(nkey) == key_table.end()){
 			_return = get_GET_FILE_result_as_string(&filename[0], nkey, false, -1, NULL);
@@ -335,14 +374,19 @@ class MyServiceHandler : virtual public MyServiceIf {
 		struct node_info target_suc;
 		rpc_find_successor(target_suc, nkey);
 		//Connect to target_suc.port
-		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
-		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
-		
-		MyServiceClient client(protocol);
-		transport->open();
-		client.rpc_get_file(_return, filename, nkey); 
-		transport->close();
+		if(target_suc.id != id){
+			boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
+			boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+			boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+			
+			MyServiceClient client(protocol);
+			transport->open();
+			client.rpc_get_file(_return, filename, nkey); 
+			transport->close();
+		}
+		else{
+			rpc_get_file(_return, filename, nkey); 
+		}
 		return;
 	}
 
@@ -364,14 +408,20 @@ class MyServiceHandler : virtual public MyServiceIf {
 	//Connect to target_suc
 	cout<<"[node "<<id<<"] found suc, connecting to it to get table\n";
 	
-		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
-		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+		if(target_suc.id != id){
+			boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
+			boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+			boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+			
+			MyServiceClient client(protocol);
+			transport->open();
+			client.rpc_get_table(_return, key); 
+			transport->close();
+		}
+		else{
+			rpc_get_table(_return, key); 
+		}
 		
-		MyServiceClient client(protocol);
-		transport->open();
-		client.rpc_get_table(_return, key); 
-		transport->close();
 	return;
 	}
  
@@ -382,18 +432,23 @@ class MyServiceHandler : virtual public MyServiceIf {
   }
 
   void rpc_return_predecessor(node_info& _return) {
+	pthread_mutex_lock(&pre_mutex);
   	_return = my_pre;
+	pthread_mutex_unlock(&pre_mutex);
   }
 
   void rpc_notify_of_predecessor(const node_info& new_pre) {
 
+	//cout<<"[node"<<id<<"] notified of pred.id="<<new_pre.id<<endl;
 	int inflated_id = id;
 	if(id == 0){
 		inflated_id = pow(2,m);
 	}
+	pthread_mutex_lock(&pre_mutex);
 	if(my_pre.id == -1 || (new_pre.id > my_pre.id && new_pre.id < inflated_id) || (my_pre.id == id) ){
 		my_pre = new_pre;
 	}
+	pthread_mutex_unlock(&pre_mutex);
   }
 
 };
@@ -415,6 +470,8 @@ int main(int argc, char **argv) {
 	setup_finger_table();
 	setup_key_table();
 
+	cout<<"[node "<<id<<"] Starting stab and fix threads\n";
+	
 	setup_stabilize_thread();			//FIX keys also
 	setup_fixfinger_thread();
 
@@ -424,8 +481,8 @@ int main(int argc, char **argv) {
   shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
   shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
 
-  TSimpleServer server(processor, serverTransport, transportFactory, protocolFactory);		//TODO: change to Tthreaded
-  //TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);		//TODO: change to Tthreaded
+  //TSimpleServer server(processor, serverTransport, transportFactory, protocolFactory);		//TODO: change to Tthreaded
+  TThreadedServer server(processor, serverTransport, transportFactory, protocolFactory);		//TODO: change to Tthreaded
   server.serve();
 
     //INIT_LOCAL_LOGGER();
@@ -441,11 +498,16 @@ int main(int argc, char **argv) {
 //Because structs cannot be initialized with {..}
 void init_node_info_structs(){
 
+//	pthread_mutex_lock(&suc_mutex);
+//	pthread_mutex_lock(&pre_mutex);
+
 	my_suc.id = 0;
 	my_suc.port = port;
 	my_pre.id = -1;
 	my_pre.port = -1;
 
+//	pthread_mutex_unlock(&pre_mutex);
+//	pthread_mutex_unlock(&suc_mutex);
 
 }
 
@@ -465,10 +527,14 @@ int32_t hash(string fname){
 	return new_key_id;
 }
 
-
+/*
 void connect_to_port(int port_to_connect_to){
 
+	
+
+	pthread_mutex_lock(&suc_mutex);
 	boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
+	pthread_mutex_unlock(&suc_mutex);
 	boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
 	boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 
@@ -479,22 +545,30 @@ void connect_to_port(int port_to_connect_to){
 	transport->close();
 
 }
-
+*/
 //ASK suc for keys that belong to me.
 // key <=myid
 void fixKeys(){
 
-	//Connect to suc.port
-	boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
-	boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-	boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
-
-	MyServiceClient client(protocol);
-    transport->open();
 	map<int32_t, file_info> newmap;
-	client.rpc_transfer_keys(newmap, id);
-	transport->close();
-
+	//Connect to suc.port
+	pthread_mutex_lock(&suc_mutex);
+	if(my_suc.id != id){
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
+		pthread_mutex_unlock(&suc_mutex);
+		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+	
+		MyServiceClient client(protocol);
+   		 transport->open();
+		client.rpc_transfer_keys(newmap, id);
+		transport->close();
+	}
+	else{
+	//	rpc_transfer_keys(newmap, id);
+		pthread_mutex_unlock(&suc_mutex);
+		
+	}
 	//Now add the newly recd keys to my map
 	map<int32_t, file_info>::iterator it;
 	key_table.insert(newmap.begin(), newmap.end());
@@ -508,43 +582,53 @@ void *stabilize(void* thread_arg){
 	while(1){
 		//Connect to suc.port
 		
-		boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
-		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
-	
-		MyServiceClient client(protocol);
-   		transport->open();
+		//cout<<"[node"<<id<<"] stabilizing..\n";
 		struct node_info recd_pre;
-		client.rpc_return_predecessor(recd_pre);
-		transport->close();
+		if(my_suc.id !=id){
+			pthread_mutex_lock(&suc_mutex);
+			boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
+			pthread_mutex_unlock(&suc_mutex);
+			boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+			boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 		
-		int inflated_suc_id = my_suc.id;
-		if(my_suc.id == 0)
-			inflated_suc_id = pow(2,m);
-		if(recd_pre.id > id && recd_pre.id < inflated_suc_id){
-			my_suc = recd_pre;
+			MyServiceClient client(protocol);
+   			transport->open();
+			client.rpc_return_predecessor(recd_pre);
+			transport->close();
 		}
+		else{
+				recd_pre = my_pre;
+		}
+			pthread_mutex_lock(&suc_mutex);
+			int inflated_suc_id = my_suc.id;
+			if(my_suc.id == 0)
+				inflated_suc_id = pow(2,m);
+			if(recd_pre.id > id && recd_pre.id < inflated_suc_id){
+				my_suc = recd_pre;
+			}
+		
+			//Now notify successor that i am your pred
+			//Connect to suc.port --NEED THIS AGAIN because suc might have changed in the if case
+			boost::shared_ptr<TSocket> n_socket(new TSocket("localhost", my_suc.port));
+			pthread_mutex_unlock(&suc_mutex);
+			boost::shared_ptr<TTransport> n_transport(new TBufferedTransport(n_socket));
+			boost::shared_ptr<TProtocol> n_protocol(new TBinaryProtocol(n_transport));
+		
+			MyServiceClient n_client(n_protocol);
+		    n_transport->open();
+			struct node_info my_node_info;
+			my_node_info.id = id;
+			my_node_info.port = port;
 	
-		//Now notify successor that i am your pred
-		//Connect to suc.port --NEED THIS AGAIN because suc might have changed in the if case
-		boost::shared_ptr<TSocket> n_socket(new TSocket("localhost", my_suc.port));
-		boost::shared_ptr<TTransport> n_transport(new TBufferedTransport(n_socket));
-		boost::shared_ptr<TProtocol> n_protocol(new TBinaryProtocol(n_transport));
+			//cout<<"[node "<<id<<"]\n";
+			n_client.rpc_notify_of_predecessor(my_node_info);
+			n_transport->close();
+		
+			fixKeys();
+			//Sleep for an interval
+			sleep(stabilizeInterval);
 	
-		MyServiceClient n_client(n_protocol);
-	    n_transport->open();
-		struct node_info my_node_info;
-		my_node_info.id = id;
-		my_node_info.port = port;
-
-		//cout<<"[node "<<id<<"]\n";
-		n_client.rpc_notify_of_predecessor(my_node_info);
-		n_transport->close();
-	
-		fixKeys();
-		//Sleep for an interval
-		sleep(stabilizeInterval);
-	}
+		}
 	return NULL;
 }
 
@@ -561,14 +645,16 @@ void setup_stabilize_thread(){
 void *fix_fingers(void* thread_arg){
 
 	while(1){
-		int finger = rand() % m;
+		if(my_suc.id != id){
+			int finger = rand() % m;
 	
-		//Ask myself for finding successor for a particular key
-		MyServiceHandler client;
-		struct node_info result;
-		int target_key = (int)(id + pow(2,finger)) % (int)(pow(2,m));
-		client.rpc_find_successor(result, target_key);		
-		ftable[finger] = result;
+			//Ask myself for finding successor for a particular key
+			MyServiceHandler client;
+			struct node_info result;
+			int target_key = (int)(id + pow(2,finger)) % (int)(pow(2,m));
+			client.rpc_find_successor(result, target_key);		
+			ftable[finger] = result;
+		}
 		sleep(fixInterval);
 	}
 	return NULL;
@@ -593,8 +679,10 @@ void setup_successor(){
 	cout<<"[node "<<id<<"]setting up successor\n";
 	//If introducer then I am my suc
 	if(id==0){
+	pthread_mutex_lock(&suc_mutex);
 		my_suc.id = 0;
 		my_suc.port = port;
+	pthread_mutex_unlock(&suc_mutex);
 	}
 	else{
 		//Ask id0 to find my suc
@@ -605,11 +693,18 @@ void setup_successor(){
 	
 		MyServiceClient client(protocol);
 	    transport->open();
-		client.rpc_find_successor(my_suc, id);
+		struct node_info ret_info;
+		cout<<"[node "<<id<<"]making rpc call to node 0: "<<" \n";
+		client.rpc_find_successor(ret_info, id);
+		cout<<"[node "<<id<<"]recd successor: "<<ret_info.id<<" \n";
+
+	pthread_mutex_lock(&suc_mutex);
+		my_suc = ret_info;
+	pthread_mutex_unlock(&suc_mutex);
 		transport->close();
 	}
-
 		cout<<"[node "<<id<<"]successor set up as: "<<my_suc.id<<" \n";
+
 }
 
 
@@ -627,7 +722,10 @@ void setup_finger_table(){
 		}
 	}
 	else{
-		boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
+	pthread_mutex_lock(&suc_mutex);
+		int target_port = my_suc.port;
+	pthread_mutex_unlock(&suc_mutex);
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_port));
 		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
 		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 	
@@ -646,7 +744,11 @@ void setup_key_table(){
 		return;
 	}
 	else{
-		boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
+
+	pthread_mutex_lock(&suc_mutex);
+	int target_port = my_suc.port;
+	pthread_mutex_unlock(&suc_mutex);
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_port));
 		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
 		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
 	

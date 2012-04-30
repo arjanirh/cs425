@@ -180,7 +180,7 @@ void add_node(int id){
 			}
 	
 			//Try connecting to node
-			sleep(1);
+/*			sleep(1);
 			try{
 				boost::shared_ptr<TSocket> socket(new TSocket("localhost", currentPort));
 				boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
@@ -192,10 +192,12 @@ void add_node(int id){
 				try_again = false;
 			}
 			catch(apache::thrift::transport::TTransportException oops){
-				cout<<"Caught exception in listener\n";
+				cout<<"------- ----------CAUGHT EXCEPTION IN LISTENER , relaunching-------\n";
 				try_again = true;			
 			}
 			currentPort = (rand() % 8000)+1025;
+*/
+	try_again = false;
 	}	
 }
 
