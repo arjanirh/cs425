@@ -395,18 +395,18 @@ class MyServiceHandler : virtual public MyServiceIf {
 
 	//cout<<"[node] ftable.size="<<ftable.size()<<endl;
 	if(key == id){
-	cout<<"[node "<<id<<"] returning my table\n";
+//	cout<<"[node "<<id<<"] returning my table\n";
 		_return = get_GET_TABLE_result_as_string(ftable, m, key, 0, key_table);
 		return;
 	}
 	else{
 	struct node_info target_suc;
-	cout<<"[node "<<id<<"] calling find suc on key="<<key<<endl; 
+//	cout<<"[node "<<id<<"] calling find suc on key="<<key<<endl; 
 	rpc_find_successor(target_suc, key);
 	
 	
 	//Connect to target_suc
-	cout<<"[node "<<id<<"] found suc, connecting to it to get table\n";
+//	cout<<"[node "<<id<<"] found suc, connecting to it to get table\n";
 	
 		if(target_suc.id != id){
 			boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_suc.port));
@@ -455,7 +455,7 @@ class MyServiceHandler : virtual public MyServiceIf {
 
 int main(int argc, char **argv) {
 
-	cout<<"[node] Starting node process with PID= "<<getpid()<<endl;
+//	cout<<"[node] Starting node process with PID= "<<getpid()<<endl;
 	
 	init_node_info_structs();
 	check_usage(argc);
@@ -465,12 +465,12 @@ int main(int argc, char **argv) {
 //cout<<"In node, id="<<id<<", m="<<m<<endl;
 
 	//Node Join:
-	cout<<"[node "<<id<<"]\n";
+//	cout<<"[node "<<id<<"]\n";
 	setup_successor();
 	setup_finger_table();
 	setup_key_table();
 
-	cout<<"[node "<<id<<"] Starting stab and fix threads\n";
+//	cout<<"[node "<<id<<"] Starting stab and fix threads\n";
 	
 	setup_stabilize_thread();			//FIX keys also
 	setup_fixfinger_thread();
@@ -552,6 +552,9 @@ void fixKeys(){
 
 	map<int32_t, file_info> newmap;
 	//Connect to suc.port
+
+
+
 	pthread_mutex_lock(&suc_mutex);
 	if(my_suc.id != id){
 		boost::shared_ptr<TSocket> socket(new TSocket("localhost", my_suc.port));
@@ -572,6 +575,9 @@ void fixKeys(){
 	//Now add the newly recd keys to my map
 	map<int32_t, file_info>::iterator it;
 	key_table.insert(newmap.begin(), newmap.end());
+	
+	//Delte keys not belonging to me
+
 }
 
 /*
@@ -676,7 +682,7 @@ void setup_fixfinger_thread(){
  */
 void setup_successor(){
 
-	cout<<"[node "<<id<<"]setting up successor\n";
+//	cout<<"[node "<<id<<"]setting up successor\n";
 	//If introducer then I am my suc
 	if(id==0){
 	pthread_mutex_lock(&suc_mutex);
@@ -686,7 +692,7 @@ void setup_successor(){
 	}
 	else{
 		//Ask id0 to find my suc
-		cout<<"[node "<<id<<"]asking id0 to find successor\n";
+//		cout<<"[node "<<id<<"]asking id0 to find successor\n";
 		boost::shared_ptr<TSocket> socket(new TSocket("localhost", introducerPort));
 		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
 		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
@@ -694,16 +700,16 @@ void setup_successor(){
 		MyServiceClient client(protocol);
 	    transport->open();
 		struct node_info ret_info;
-		cout<<"[node "<<id<<"]making rpc call to node 0: "<<" \n";
+//		cout<<"[node "<<id<<"]making rpc call to node 0: "<<" \n";
 		client.rpc_find_successor(ret_info, id);
-		cout<<"[node "<<id<<"]recd successor: "<<ret_info.id<<" \n";
+//		cout<<"[node "<<id<<"]recd successor: "<<ret_info.id<<" \n";
 
 	pthread_mutex_lock(&suc_mutex);
 		my_suc = ret_info;
 	pthread_mutex_unlock(&suc_mutex);
 		transport->close();
 	}
-		cout<<"[node "<<id<<"]successor set up as: "<<my_suc.id<<" \n";
+//		cout<<"[node "<<id<<"]successor set up as: "<<my_suc.id<<" \n";
 
 }
 
@@ -754,9 +760,12 @@ void setup_key_table(){
 	
 		MyServiceClient client(protocol);
 	    transport->open();
-		client.rpc_return_key_table(key_table);
+		//client.rpc_return_key_table(key_table);
+  		client.rpc_transfer_keys(key_table, id);
 		transport->close();
 	}
+
+
 
 }
 

@@ -44,7 +44,7 @@ void del_file(string );
 void get_file(string);
 void get_table(int);
 void add_node(int id);
-
+void donothing(const char*);
 
 
 //Global variables
@@ -60,6 +60,7 @@ const char* logConfig = NULL;
 
 int main(int argc, char** argv){
 
+	apache::thrift::GlobalOutput.setOutputFunction(donothing);
 	parse_args(argc, argv);
 
 	setup_and_connect_to_node();
@@ -68,6 +69,8 @@ int main(int argc, char** argv){
 
 return 0;
 }
+
+void donothing(const char*){}
 
 void handle_command(){
 
@@ -87,7 +90,9 @@ void handle_command(){
 			if(command == "ADD_NODE"){
 				while(!stream1.eof()){
 					stream1>>getnodeid;
+					cout<<"Add node called on id=\""<<getnodeid<<"\""<<endl;
 					add_node(getnodeid);
+
 				}
 			}
 
@@ -136,10 +141,11 @@ void add_node(int id){
 	bool try_again = true;
 		currentPort = startingPort;
 		if(startingPort == -1){
-			currentPort = (rand() % 8000)+1025;
+			currentPort = (rand() % 7000)+3000;
 		}
 	while(try_again){
 	
+			cout<<"ADDING NODE port = "<<currentPort<<endl;
 	
 			char *exec_cmd[9];
 			int buf_size = 30;		
@@ -180,7 +186,7 @@ void add_node(int id){
 			}
 	
 			//Try connecting to node
-/*			sleep(1);
+			sleep(1);
 			try{
 				boost::shared_ptr<TSocket> socket(new TSocket("localhost", currentPort));
 				boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
@@ -190,14 +196,15 @@ void add_node(int id){
 				transport->open();
 				transport->close();
 				try_again = false;
+				//cout<<"New Node id="<<id<<", port= "<<currentPort<<endl;
 			}
 			catch(apache::thrift::transport::TTransportException oops){
-				cout<<"------- ----------CAUGHT EXCEPTION IN LISTENER , relaunching-------\n";
+				//cout<<"------- ----------CAUGHT EXCEPTION IN LISTENER , relaunching-------\n";
 				try_again = true;			
 			}
 			currentPort = (rand() % 8000)+1025;
-*/
-	try_again = false;
+
+//	try_again = false;
 	}	
 }
 
