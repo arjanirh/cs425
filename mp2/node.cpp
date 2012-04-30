@@ -10,9 +10,6 @@
 #include <transport/TServerSocket.h>
 #include <transport/TBufferTransports.h>
 
-//#include <thrift/concurrency/ThreadManager.h>
-//#include <thrift/concurrency/PosixThreadFactory.h>
-//#include <TThreadedServer.h>
 #include <server/TThreadedServer.h>
 
 using namespace ::apache::thrift::concurrency;

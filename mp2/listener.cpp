@@ -145,7 +145,7 @@ void add_node(int id){
 		}
 	while(try_again){
 	
-			cout<<"ADDING NODE port = "<<currentPort<<endl;
+//			cout<<"ADDING NODE port = "<<currentPort<<endl;
 	
 			char *exec_cmd[9];
 			int buf_size = 30;		
@@ -187,11 +187,11 @@ void add_node(int id){
 	
 			//Try connecting to node
 			sleep(1);
+			boost::shared_ptr<TSocket> socket(new TSocket("localhost", currentPort));
+			boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+			boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+
 			try{
-				boost::shared_ptr<TSocket> socket(new TSocket("localhost", currentPort));
-				boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-				boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
-				
 				MyServiceClient client(protocol);
 				transport->open();
 				transport->close();
@@ -200,9 +200,11 @@ void add_node(int id){
 			}
 			catch(apache::thrift::transport::TTransportException oops){
 				//cout<<"------- ----------CAUGHT EXCEPTION IN LISTENER , relaunching-------\n";
+				transport->close();
 				try_again = true;			
 			}
-			currentPort = (rand() % 8000)+1025;
+			//currentPort = (rand() % 8000)+1025;
+			currentPort++;
 
 //	try_again = false;
 	}	
