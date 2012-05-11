@@ -705,33 +705,34 @@ void setup_successor(){
 void setup_finger_table(){
 
 	//if introducer then always copy myself m times into ftable
-//	
-		struct node_info entry;
-		if(id==0){
-			entry.id = id;
-			entry.port = port;}
-		else{
-			entry.id = 0;
-			entry.port = introducerPort;}
+	struct node_info entry;
+	if(id==0){
+		entry.id = id;
+		entry.port = port;
+	}
+	else{
+		entry.id = id;
+		entry.port = introducerPort;
+	}
 
-		for(int i=0;i<m; i++){
+	for(int i=0;i<m; i++){
 			ftable.push_back(entry);
 		}
-	//}
-	//else{
-	//pthread_mutex_lock(&suc_mutex);
-	//	int target_port = my_suc.port;
-	//pthread_mutex_unlock(&suc_mutex);
-	//	boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_port));
-	//	boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-	//	boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
-	//
-	//	MyServiceClient client(protocol);
-	//    transport->open();
-	//	client.rpc_return_finger_table(ftable);
-	//	transport->close();
+/*	else{
+	pthread_mutex_lock(&suc_mutex);
+		int target_port = my_suc.port;
+	pthread_mutex_unlock(&suc_mutex);
+		boost::shared_ptr<TSocket> socket(new TSocket("localhost", target_port));
+		boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+		boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+	
+		MyServiceClient client(protocol);
+	    transport->open();
+		client.rpc_return_finger_table(ftable);
+		transport->close();
 		
-	//}
+	}
+*/
 }
 
 /*
