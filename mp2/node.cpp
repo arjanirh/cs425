@@ -259,6 +259,7 @@ void rpc_transfer_keys(std::map<int32_t, file_info> & _return, const int32_t key
 		filedata.name = filename;
 		filedata.data = data;
 		key_table.insert(pair<int32_t, file_info>(target_key, filedata));
+		cout<<"node= "<<id<<": added file: k= "<<target_key<<endl; 
 		_return = get_ADD_FILE_result_as_string(&filename[0], target_key, id);
 		return;
 	}
@@ -310,11 +311,13 @@ void rpc_transfer_keys(std::map<int32_t, file_info> & _return, const int32_t key
 	if((nkey >preid && nkey <=inflated_id) || (preid == id)){
 		//If key not found
 		if(key_table.find(nkey) == key_table.end()){
+			cout<<"node= "<<id<<": no such file k= "<<nkey<<" to delete"<<endl;
 			_return = get_DEL_FILE_result_as_string(&filename[0], nkey, false, -1);
 			return;
 		}
 		//if file found then delete from map
 		key_table.erase( key_table.find(nkey) ); 
+		cout<<"node= "<<id<<": deleted file: k= "<<nkey<<endl; 
 		_return = get_DEL_FILE_result_as_string(&filename[0], nkey, true, id);
 		return;
 	}
@@ -362,11 +365,13 @@ void rpc_transfer_keys(std::map<int32_t, file_info> & _return, const int32_t key
 	if((nkey >preid && nkey <=id) || (preid == id)){
 		//If key not found
 		if(key_table.find(nkey) == key_table.end()){
+			cout<<"node= "<<id<<": no such file k= "<<nkey<<" to serve"<<endl;
 			_return = get_GET_FILE_result_as_string(&filename[0], nkey, false, -1, NULL);
 			return;
 		}
 		//if file found then return fdata from map
 		struct file_info finfo = (key_table.find(nkey))->second; 
+		cout<<"node= "<<id<<": served file: k= "<<nkey<<endl; 
 		_return = get_GET_FILE_result_as_string(&(finfo.name)[0], nkey, true, id, &(finfo.data)[0]);
 		return;
 	}
@@ -462,6 +467,10 @@ void rpc_transfer_keys(std::map<int32_t, file_info> & _return, const int32_t key
 	pthread_mutex_lock(&pre_mutex);
 	if(my_pre.id == -1 || (new_pre.id > my_pre.id && new_pre.id < inflated_id) || (my_pre.id == id) ){
 		my_pre = new_pre;
+		//cout<<"node= "<<id<<": updated predecessor= "<<my_suc.id<<endl;
+		if(my_pre.id != new_pre.id){
+			cout<<"node= "<<id<<": updated predecessor= "<<my_pre.id<<endl; 
+		}
 	}
 	pthread_mutex_unlock(&pre_mutex);
   }
@@ -634,6 +643,9 @@ void *fix_fingers(void* thread_arg){
 			struct node_info result;
 			int target_key = (int)(id + pow(2,finger)) % (int)(pow(2,m));
 			client.rpc_find_successor(result, target_key);		
+			if(ftable[finger].id !=result.id){
+				cout<<"node= "<<id<<": updated finger entry: i= "<<(finger+1)<<", pointer= "<<result.id<<endl; 
+			}
 			ftable[finger] = result;
 		}
 		sleep(fixInterval);
@@ -663,6 +675,8 @@ void setup_successor(){
 		my_suc.id = 0;
 		my_suc.port = port;
 	pthread_mutex_unlock(&suc_mutex);
+	cout<<"node= "<<id<<": initial successor= "<<my_suc.id<<endl;
+
 	}
 	else{
 		//Ask id0 to find my suc
@@ -679,6 +693,7 @@ void setup_successor(){
 		my_suc = ret_info;
 	pthread_mutex_unlock(&suc_mutex);
 		transport->close();
+	cout<<"node= "<<id<<": initial successor= "<<my_suc.id<<endl;
 	}
 
 }
